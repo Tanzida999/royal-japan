@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Barcode } from "@/components/Barcode";
 
 export const Route = createFileRoute("/_authenticated/staff")({
-  head: () => ({ meta: [{ title: "Staff — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Staff — Mobile Shop Manager" }] }),
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery);
     if (me?.role !== "owner") throw redirect({ to: "/sell" });

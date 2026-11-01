@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { PrintLabel, type LabelData } from "@/components/PrintLabel";
 
 export const Route = createFileRoute("/_authenticated/stock")({
-  head: () => ({ meta: [{ title: "Stock — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Stock — Mobile Shop Manager" }] }),
   component: Stock,
 });
 

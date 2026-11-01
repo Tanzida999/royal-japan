@@ -6,7 +6,7 @@ import { jstDate, meQuery, shopsQuery, yen } from "@/lib/app";
 import { buildAlerts } from "@/lib/alerts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Owner Dashboard — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Owner Dashboard — Mobile Shop Manager" }] }),
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery);
     if (me?.role !== "owner") throw redirect({ to: "/sell" });

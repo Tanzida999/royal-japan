@@ -10,7 +10,7 @@ import { Receipt as ReceiptView, type ReceiptData } from "@/components/Receipt";
 import { StaffScan } from "@/components/StaffScan";
 
 export const Route = createFileRoute("/_authenticated/sell")({
-  head: () => ({ meta: [{ title: "Sell — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Sell — Mobile Shop Manager" }] }),
   component: Sell,
 });
 
