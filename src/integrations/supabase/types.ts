@@ -14,16 +14,302 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      models: {
+        Row: {
+          brand: string
+          id: string
+          model: string
+          sort: number
+        }
+        Insert: {
+          brand: string
+          id?: string
+          model: string
+          sort?: number
+        }
+        Update: {
+          brand?: string
+          id?: string
+          model?: string
+          sort?: number
+        }
+        Relationships: []
+      }
+      product_costs: {
+        Row: {
+          created_at: string
+          created_by: string
+          product_id: string
+          purchase_price: number
+          supplier: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          product_id: string
+          purchase_price: number
+          supplier?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          product_id?: string
+          purchase_price?: number
+          supplier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_costs_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      products: {
+        Row: {
+          color: string
+          condition: string
+          created_at: string
+          created_by: string
+          id: string
+          imei: string
+          model_id: string
+          product_code: string
+          selling_price: number
+          shop_id: string
+          status: string
+          storage: string
+        }
+        Insert: {
+          color: string
+          condition: string
+          created_at?: string
+          created_by: string
+          id?: string
+          imei: string
+          model_id: string
+          product_code: string
+          selling_price: number
+          shop_id: string
+          status?: string
+          storage: string
+        }
+        Update: {
+          color?: string
+          condition?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          imei?: string
+          model_id?: string
+          product_code?: string
+          selling_price?: number
+          shop_id?: string
+          status?: string
+          storage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "models"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          id: string
+          name: string
+          shop_id: string | null
+        }
+        Insert: {
+          id: string
+          name: string
+          shop_id?: string | null
+        }
+        Update: {
+          id?: string
+          name?: string
+          shop_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales: {
+        Row: {
+          created_at: string
+          customer_name: string | null
+          id: string
+          payment: string
+          product_id: string
+          receipt_no: string
+          sale_price: number
+          shop_id: string
+          sold_by: string
+        }
+        Insert: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          payment: string
+          product_id: string
+          receipt_no?: string
+          sale_price: number
+          shop_id: string
+          sold_by: string
+        }
+        Update: {
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          payment?: string
+          product_id?: string
+          receipt_no?: string
+          sale_price?: number
+          shop_id?: string
+          sold_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: true
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shops: {
+        Row: {
+          id: string
+          name: string
+        }
+        Insert: {
+          id?: string
+          name: string
+        }
+        Update: {
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      add_product: {
+        Args: {
+          _color: string
+          _condition: string
+          _imei: string
+          _model_id: string
+          _purchase_price: number
+          _selling_price: number
+          _shop_id: string
+          _storage: string
+          _supplier: string
+        }
+        Returns: {
+          color: string
+          condition: string
+          created_at: string
+          created_by: string
+          id: string
+          imei: string
+          model_id: string
+          product_code: string
+          selling_price: number
+          shop_id: string
+          status: string
+          storage: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_sale: {
+        Args: {
+          _customer_name: string
+          _payment: string
+          _product_id: string
+          _sale_price: number
+        }
+        Returns: {
+          created_at: string
+          customer_name: string | null
+          id: string
+          payment: string
+          product_id: string
+          receipt_no: string
+          sale_price: number
+          shop_id: string
+          sold_by: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "sales"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "owner" | "staff"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +436,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["owner", "staff"],
+    },
   },
 } as const
