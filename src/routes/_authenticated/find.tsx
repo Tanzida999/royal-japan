@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/find")({
-  head: () => ({ meta: [{ title: "Find in Other Shops — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Find in Other Shops — Mobile Shop Manager", "Find available phones at other shops and request transfers."),
   component: Find,
 });
 

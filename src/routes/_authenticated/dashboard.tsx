@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, redirect } from "@tanstack/react-router";
@@ -8,7 +9,7 @@ import { jstDate, meQuery, shopsQuery, yen } from "@/lib/app";
 import { buildAlerts } from "@/lib/alerts";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Owner Dashboard — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Owner Dashboard — Mobile Shop Manager", "Track shop stock, sales, profits and overdue transfer alerts."),
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery);
     if (me?.role !== "owner") throw redirect({ to: "/sell" });

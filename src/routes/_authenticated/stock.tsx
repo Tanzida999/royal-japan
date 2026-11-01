@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PrintLabel, type LabelData } from "@/components/PrintLabel";
 
 export const Route = createFileRoute("/_authenticated/stock")({
-  head: () => ({ meta: [{ title: "Stock — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Stock — Mobile Shop Manager", "View available and in-transit phone inventory at the current shop."),
   component: Stock,
 });
 

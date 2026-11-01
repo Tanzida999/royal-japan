@@ -13,6 +13,8 @@ export const Route = createFileRoute("/auth")({
       { name: "description", content: "Stock and sales management for mobile shops" },
       { property: "og:title", content: "Sign in — Mobile Shop Manager" },
       { property: "og:description", content: "Stock and sales management for mobile shops" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: AuthPage,

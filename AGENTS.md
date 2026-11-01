@@ -9,11 +9,17 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 
-- All writes to products/product_costs/sales go through SECURITY DEFINER RPCs (add_product, complete_sale); tables have no insert/update/delete policies, so nothing can be deleted or edited directly.
+- All writes to products/product_costs/sales go through SECURITY DEFINER RPCs (add_product, complete_sale, complete_cart_sale); tables have no insert/update/delete policies, so nothing can be deleted or edited directly.
 - Roles live in public.user_roles (checked via has_role), not on profiles, to prevent self-promotion; purchase cost is in product_costs, readable only by owners via RLS.
 - Add Product / Sell require a scanned staff code (profiles.staff_code); the RPCs re-verify it via check_staff_code so the UI check can't be bypassed.
-- A sale's shop is the scanning staff member's shop (not the phone's), so the dashboard can flag cross-shop sales.
+- Cart sales use the selected shop, validated against the caller, staff badge and every phone's current shop; sale line net amounts allocate total discount so reports stay accurate.
 - Sales RLS: owners see all, staff see only sales where shop_id = my_shop_id(); new staff accounts are created by the owner-only createStaff server function.
 - Pure business rules (bulk row checks, supplier paid amounts, dashboard alerts) live in src/lib/bulk.ts and src/lib/alerts.ts with tests in src/test/rules.test.ts.
 - Netlify deploy uses netlify.toml with NITRO_PRESET=netlify (server rendering via a Netlify Function), not an SPA redirect, because routes render on the server.
 - Phones have shop_id (bought for) and current_shop_id (where it physically is); selling and stock use current_shop_id. Transfers change location only via request/respond/receive/cancel_transfer RPCs, so a phone in transit can never be sold.
+
+- Shared current-shop context scopes all shop pages; local storage holds only the owner's selection, never authority, and RPCs independently enforce shop access.
+- Receipts persist immutable shop and item snapshots with one header per cart; sales remain discounted line records for existing reporting.
+- Shop logos use private storage and signed read URLs because workspace policy blocks public buckets.
+- Transfer request expiry uses a managed hourly authenticated callback and deadline guards; overdue cancellation is owner-only and logged.
+- Browser camera decoding is dynamically imported inside an effect and stops media tracks on exit.

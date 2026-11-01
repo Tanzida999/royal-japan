@@ -36,6 +36,13 @@
       "when": 1793547263652,
       "tag": "0004_current_shop_transfer_request",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793547418774,
+      "tag": "0005_enforce_staff_shop_writes",
+      "breakpoints": true
     }
   ]
 }

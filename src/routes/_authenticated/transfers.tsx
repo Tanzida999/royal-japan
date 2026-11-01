@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
@@ -9,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/transfers")({
-  head: () => ({ meta: [{ title: "Transfers — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Transfers — Mobile Shop Manager", "Request, accept and receive phone transfers between shops."),
   component: Transfers,
 });
 

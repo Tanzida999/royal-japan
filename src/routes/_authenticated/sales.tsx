@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
@@ -12,7 +13,7 @@ import { ReceiptActions } from "@/components/ReceiptActions";
 import { Receipt, type ReceiptData } from "@/components/Receipt";
 
 export const Route = createFileRoute("/_authenticated/sales")({
-  head: () => ({ meta: [{ title: "Sales — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Sales — Mobile Shop Manager", "Review shop sales and reprint complete customer receipts."),
   component: Sales,
 });
 

@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, redirect } from "@tanstack/react-router";
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/stock-check")({
-  head: () => ({ meta: [{ title: "Stock Check — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Stock Check — Mobile Shop Manager", "Reconcile scanned shelf phones against current shop inventory."),
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery);
     if (me?.role !== "owner") throw redirect({ to: "/sell" });

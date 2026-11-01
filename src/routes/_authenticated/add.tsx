@@ -1,3 +1,4 @@
+import { pageMeta } from "@/lib/metadata";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -15,7 +16,7 @@ import { StaffScan } from "@/components/StaffScan";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 
 export const Route = createFileRoute("/_authenticated/add")({
-  head: () => ({ meta: [{ title: "Add Product — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Add Product — Mobile Shop Manager", "Register individual phones or bulk purchases with verified staff badges."),
   component: AddProduct,
 });
 
