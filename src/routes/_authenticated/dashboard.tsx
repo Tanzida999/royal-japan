@@ -141,7 +141,7 @@ function Dashboard() {
                 <span className="text-muted-foreground">
                   {a.text}
                   {a.kind === "Different shop" && ` (bought for ${shopName(a.shopIds[0] ?? "")}, sold at ${shopName(a.shopIds[1] ?? "")})`}
-                  {(a.kind === "In transit 24h+" || a.kind === "Transfer rejected") && ` (${shopName(a.shopIds[0] ?? "")} → ${shopName(a.shopIds[1] ?? "")})`}
+                  {(a.kind === "In transit 24h+" || a.kind === "Transfer overdue" || a.kind === "Transfer rejected") && ` (${shopName(a.shopIds[0] ?? "")} → ${shopName(a.shopIds[1] ?? "")})`}
                   {["Below cost", "Old stock"].includes(a.kind) && ` · ${shopName(a.shopIds[0] ?? "")}`}
                 </span>
               </li>

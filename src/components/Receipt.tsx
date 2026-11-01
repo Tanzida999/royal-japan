@@ -27,7 +27,7 @@ export type ReceiptData = {
 export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData; format?: "thermal" | "a4" }) {
   return (
     <div className={`print-area receipt-print ${format === "a4" ? "receipt-a4 max-w-3xl" : "max-w-xs"} mx-auto space-y-2 rounded-xl border bg-card p-4 font-mono text-sm`}>
-      <ShopLogo path={receipt.logo} name={receipt.shop} />
+      <ShopLogo path={receipt.logo ?? null} name={receipt.shop} />
       <div className="text-center text-base font-bold">{receipt.shop}</div>
       {receipt.address && <div className="text-center text-xs">{receipt.postal_code} {receipt.address}</div>}
       {receipt.phone && <div className="text-center text-xs">Tel: {receipt.phone}</div>}

@@ -3,7 +3,7 @@ import { yen } from "./app";
 export type Alert = { kind: "Below cost" | "Different shop" | "Old stock" | "In transit 24h+" | "Transfer overdue" | "Transfer rejected"; code: string; text: string; shopIds: string[] };
 
 type Sale = { receipt_no: string; product_id: string; sale_price: number; shop_id: string };
-type Product = { id: string; product_code: string; shop_id: string; status: string; created_at: string; name: string };
+type Product = { id: string; product_code: string; shop_id: string; current_shop_id?: string | null; status: string; created_at: string; name: string };
 
 export const OLD_STOCK_DAYS = 60;
 
@@ -28,14 +28,14 @@ export function buildAlerts({ sales, products, cost, now, transfers = [], transi
   for (const p of products) {
     if (p.status !== "in_stock") continue;
     const days = Math.floor((now.getTime() - new Date(p.created_at).getTime()) / 86_400_000);
-    if (days >= OLD_STOCK_DAYS) out.push({ kind: "Old stock", code: p.product_code, text: `${p.name} in stock ${days} days`, shopIds: [p.shop_id] });
+    if (days >= OLD_STOCK_DAYS) out.push({ kind: "Old stock", code: p.product_code, text: `${p.name} in stock ${days} days`, shopIds: [p.current_shop_id ?? p.shop_id] });
   }
   for (const t of transfers) {
     const p = byId.get(t.product_id);
     const code = p?.product_code ?? "";
     if (t.status === "accepted" && t.accepted_at) {
       const hours = Math.floor((now.getTime() - new Date(t.accepted_at).getTime()) / 3_600_000);
-      if (hours >= transitLimit) out.push({ kind: transitLimit === 24 ? "In transit 24h+" : "Transfer overdue", code, text: `${p?.name ?? ""} in transit ${hours}h`, shopIds: [t.from_shop_id, t.to_shop_id] });
+      if (now.getTime() > new Date(t.accepted_at).getTime() + transitLimit * 3_600_000) out.push({ kind: transitLimit === 24 ? "In transit 24h+" : "Transfer overdue", code, text: `${p?.name ?? ""} in transit ${hours}h`, shopIds: [t.from_shop_id, t.to_shop_id] });
     }
     if (t.status === "rejected") out.push({ kind: "Transfer rejected", code, text: `${p?.name ?? ""} — ${t.reject_reason ?? ""}`, shopIds: [t.from_shop_id, t.to_shop_id] });
   }
