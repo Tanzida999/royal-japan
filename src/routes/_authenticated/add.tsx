@@ -193,12 +193,12 @@ function AddProduct() {
           <h1 className="text-2xl font-bold">{saved.length > 1 ? `${saved.length} products saved` : "Product saved"}</h1>
           {saved.length === 1 && (
             <p className="text-muted-foreground">
-              Product code: <span className="font-mono font-semibold text-foreground">{saved[0].product_code}</span>
+              Product code: <span className="font-mono font-semibold text-foreground">{saved[0]?.product_code}</span>
             </p>
           )}
         </div>
         {saved.length === 1 ? (
-          <PrintLabel data={saved[0]} />
+          <PrintLabel data={saved[0]!} />
         ) : (
           <div className="print-area labels-sheet flex flex-wrap gap-2">
             {saved.map((l) => (

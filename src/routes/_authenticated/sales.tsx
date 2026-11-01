@@ -158,7 +158,7 @@ function Sales() {
                   <td className="p-2">{staffName(r)}</td>
                   <td className="p-2">{r.payment}</td>
                   <td className="p-2 text-right">{yen(r.sale_price)}</td>
-                  {isOwner && <td className="p-2 text-right">{costs[r.product_id] != null ? yen(r.sale_price - costs[r.product_id]) : "—"}</td>}
+                  {isOwner && <td className="p-2 text-right">{costs[r.product_id] != null ? yen(r.sale_price - (costs[r.product_id] ?? 0)) : "—"}</td>}
                   <td className="p-2">
                     <Button
                       size="sm"

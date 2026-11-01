@@ -135,8 +135,8 @@ function Dashboard() {
                 <span className="font-mono">{a.code}</span>
                 <span className="text-muted-foreground">
                   {a.text}
-                  {a.kind === "Different shop" && ` (bought for ${shopName(a.shopIds[0])}, sold at ${shopName(a.shopIds[1])})`}
-                  {a.kind !== "Different shop" && ` · ${shopName(a.shopIds[0])}`}
+                  {a.kind === "Different shop" && ` (bought for ${shopName(a.shopIds[0] ?? "")}, sold at ${shopName(a.shopIds[1] ?? "")})`}
+                  {a.kind !== "Different shop" && ` · ${shopName(a.shopIds[0] ?? "")}`}
                 </span>
               </li>
             ))}
