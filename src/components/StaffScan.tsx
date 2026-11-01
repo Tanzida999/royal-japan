@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 /** Staff scans their STF-xxx badge. Calls onChange with the verified code (or "" if invalid). */
-export function StaffScan({ value, onChange }: { value: string; onChange: (code: string) => void }) {
+export function StaffScan({ value, onChange }: { value: string; onChange: (code: string, name: string) => void }) {
   const [text, setText] = useState(value);
   const [name, setName] = useState("");
   const [err, setErr] = useState("");
@@ -13,13 +13,13 @@ export function StaffScan({ value, onChange }: { value: string; onChange: (code:
     const c = text.trim().toUpperCase();
     setName("");
     setErr("");
-    onChange("");
+    onChange("", "");
     if (!c) return;
     const { data, error } = await supabase.rpc("check_staff_code", { _code: c });
     if (error || !data) return setErr(`Wrong staff code: ${c}`);
     setName(data);
     setText(c);
-    onChange(c);
+    onChange(c, data);
   }
 
   return (
@@ -33,7 +33,7 @@ export function StaffScan({ value, onChange }: { value: string; onChange: (code:
           setText(e.target.value);
           if (name) {
             setName("");
-            onChange("");
+            onChange("", "");
           }
         }}
         onBlur={verify}
