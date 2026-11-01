@@ -52,11 +52,13 @@ function Dashboard() {
     };
     if (d === today) {
       add(totals.today);
-      if (byShop[s.shop_id]) add(byShop[s.shop_id].today);
+      const b = byShop[s.shop_id];
+      if (b) add(b.today);
     }
     if (d.startsWith(month)) {
       add(totals.month);
-      if (byShop[s.shop_id]) add(byShop[s.shop_id].month);
+      const b = byShop[s.shop_id];
+      if (b) add(b.month);
     }
   }
   let stock = 0;
@@ -65,9 +67,10 @@ function Dashboard() {
     if (p.status !== "in_stock") continue;
     stock++;
     stockValue += cost[p.id] ?? 0;
-    if (byShop[p.shop_id]) {
-      byShop[p.shop_id].stock++;
-      byShop[p.shop_id].stockValue += cost[p.id] ?? 0;
+    const b = byShop[p.shop_id];
+    if (b) {
+      b.stock++;
+      b.stockValue += cost[p.id] ?? 0;
     }
   }
 
