@@ -12,7 +12,7 @@ import { StaffScan } from "@/components/StaffScan";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 
 export const Route = createFileRoute("/_authenticated/add")({
-  head: () => ({ meta: [{ title: "Add Product — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Add Product — Mobile Shop Manager" }] }),
   component: AddProduct,
 });
 

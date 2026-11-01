@@ -5,10 +5,10 @@ export const Route = createFileRoute("/")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Phone Shop Stock & Sales" },
-      { name: "description", content: "Stock, sales and barcode labels for mobile phone shops." },
-      { property: "og:title", content: "Phone Shop Stock & Sales" },
-      { property: "og:description", content: "Stock, sales and barcode labels for mobile phone shops." },
+      { title: "Mobile Shop Manager" },
+      { name: "description", content: "Stock and sales management for mobile shops" },
+      { property: "og:title", content: "Mobile Shop Manager" },
+      { property: "og:description", content: "Stock and sales management for mobile shops" },
     ],
   }),
   beforeLoad: async () => {

@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { meQuery, yen } from "@/lib/app";
 
 export const Route = createFileRoute("/_authenticated/suppliers")({
-  head: () => ({ meta: [{ title: "Suppliers — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Suppliers — Mobile Shop Manager" }] }),
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery);
     if (me?.role !== "owner") throw redirect({ to: "/sell" });

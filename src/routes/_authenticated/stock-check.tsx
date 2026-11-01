@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/stock-check")({
-  head: () => ({ meta: [{ title: "Stock Check — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Stock Check — Mobile Shop Manager" }] }),
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery);
     if (me?.role !== "owner") throw redirect({ to: "/sell" });

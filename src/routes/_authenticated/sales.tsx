@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Receipt, type ReceiptData } from "@/components/Receipt";
 
 export const Route = createFileRoute("/_authenticated/sales")({
-  head: () => ({ meta: [{ title: "Sales — Phone Shop" }] }),
+  head: () => ({ meta: [{ title: "Sales — Mobile Shop Manager" }] }),
   component: Sales,
 });
 
