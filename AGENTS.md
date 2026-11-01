@@ -15,3 +15,4 @@
 - A sale's shop is the scanning staff member's shop (not the phone's), so the dashboard can flag cross-shop sales.
 - Sales RLS: owners see all, staff see only sales where shop_id = my_shop_id(); new staff accounts are created by the owner-only createStaff server function.
 - Pure business rules (bulk row checks, supplier paid amounts, dashboard alerts) live in src/lib/bulk.ts and src/lib/alerts.ts with tests in src/test/rules.test.ts.
+- Netlify deploy uses netlify.toml with NITRO_PRESET=netlify (server rendering via a Netlify Function), not an SPA redirect, because routes render on the server.
