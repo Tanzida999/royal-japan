@@ -15,6 +15,13 @@
       "when": 1793541534654,
       "tag": "0001_staff_codes_suppliers_bulk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793545081822,
+      "tag": "0002_shop_transfers",
+      "breakpoints": true
     }
   ]
 }
