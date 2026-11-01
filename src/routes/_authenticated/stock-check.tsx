@@ -36,7 +36,8 @@ function StockCheck() {
     },
   });
 
-  const expected = all.filter((p) => p.shop_id === shop && p.status === "in_stock");
+  const expected = all.filter((p) => p.current_shop_id === shop && p.status === "in_stock");
+  const transit = all.filter((p) => p.status === "in_transit" && (p.current_shop_id === shop));
   const missing = expected.filter((p) => !found.includes(p.id));
   const name = (p: ProductRow) => `${p.models?.brand} ${p.models?.model} ${p.storage} ${p.color}`;
 
@@ -51,11 +52,15 @@ function StockCheck() {
       return setLast({ ok: false, text: `WRONG: ${q} not in system` });
     }
     if (found.includes(p.id)) return setLast({ ok: true, text: `Already scanned: ${p.product_code}` });
-    if (p.status !== "in_stock") {
+    if (p.status === "sold") {
       setWrong((w) => [{ code: p.product_code, reason: `Sold — ${name(p)}` }, ...w]);
       return setLast({ ok: false, text: `WRONG: ${p.product_code} is sold` });
     }
-    if (p.shop_id !== shop) {
+    if (p.status === "in_transit") {
+      setWrong((w) => [{ code: p.product_code, reason: `In transit — ${name(p)}` }, ...w]);
+      return setLast({ ok: false, text: `WRONG: ${p.product_code} is in transit` });
+    }
+    if (p.current_shop_id !== shop) {
       setWrong((w) => [{ code: p.product_code, reason: `Belongs to ${p.shops?.name} — ${name(p)}` }, ...w]);
       return setLast({ ok: false, text: `WRONG: ${p.product_code} belongs to ${p.shops?.name}` });
     }
@@ -100,6 +105,7 @@ function StockCheck() {
             <List title={`Missing (${missing.length})`} items={missing.map((p) => ({ code: p.product_code, reason: name(p) }))} />
             <List title={`Wrong (${wrong.length})`} items={wrong} />
           </div>
+          <List title={`In transit from this shop (${transit.length})`} items={transit.map((p) => ({ code: p.product_code, reason: name(p) }))} />
         </>
       )}
     </div>

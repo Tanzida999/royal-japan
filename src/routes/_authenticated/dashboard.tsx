@@ -28,15 +28,17 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [sales, products, costs] = await Promise.all([
+      const [sales, products, costs, transfers] = await Promise.all([
         supabase.from("sales").select("receipt_no, product_id, sale_price, shop_id, created_at"),
         supabase.from("products").select("id, product_code, shop_id, status, created_at, storage, models(brand, model)"),
         supabase.from("product_costs").select("product_id, purchase_price"),
+        supabase.from("transfers").select("product_id, from_shop_id, to_shop_id, status, accepted_at, reject_reason"),
       ]);
+      if (transfers.error) throw transfers.error;
       if (sales.error) throw sales.error;
       if (products.error) throw products.error;
       if (costs.error) throw costs.error;
-      return { sales: sales.data, products: products.data, costs: costs.data };
+      return { sales: sales.data, products: products.data, costs: costs.data, transfers: transfers.data };
     },
   });
 
@@ -93,6 +95,7 @@ function Dashboard() {
       name: `${p.models?.brand ?? ""} ${p.models?.model ?? ""} ${p.storage}`.trim(),
     })),
     cost,
+    transfers: data.transfers,
     now: new Date(),
   }).filter((a) => !shopSel || a.shopIds.includes(shopSel));
 
@@ -136,7 +139,8 @@ function Dashboard() {
                 <span className="text-muted-foreground">
                   {a.text}
                   {a.kind === "Different shop" && ` (bought for ${shopName(a.shopIds[0] ?? "")}, sold at ${shopName(a.shopIds[1] ?? "")})`}
-                  {a.kind !== "Different shop" && ` · ${shopName(a.shopIds[0] ?? "")}`}
+                  {(a.kind === "In transit 24h+" || a.kind === "Transfer rejected") && ` (${shopName(a.shopIds[0] ?? "")} → ${shopName(a.shopIds[1] ?? "")})`}
+                  {["Below cost", "Old stock"].includes(a.kind) && ` · ${shopName(a.shopIds[0] ?? "")}`}
                 </span>
               </li>
             ))}

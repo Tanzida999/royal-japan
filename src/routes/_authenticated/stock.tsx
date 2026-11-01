@@ -26,7 +26,7 @@ function Stock() {
       const { data, error } = await supabase
         .from("products")
         .select(PRODUCT_SELECT)
-        .eq("status", "in_stock")
+        .in("status", ["in_stock", "in_transit"])
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as ProductRow[];
@@ -45,15 +45,17 @@ function Stock() {
   });
 
   const q = search.trim().toLowerCase();
-  const filtered = rows.filter(
+  const matches = rows.filter(
     (r) =>
-      (!shop || r.shop_id === shop) &&
+      (!shop || r.current_shop_id === shop) &&
       (!q ||
         [r.product_code, r.imei, r.models?.brand, r.models?.model, r.color, r.storage]
           .join(" ")
           .toLowerCase()
           .includes(q)),
   );
+  const filtered = matches.filter((r) => r.status === "in_stock");
+  const transit = matches.filter((r) => r.status === "in_transit");
 
   if (label) {
     return (
@@ -133,6 +135,25 @@ function Stock() {
           </tbody>
         </table>
       </div>
+      {transit.length > 0 && (
+        <div className="overflow-x-auto rounded-xl border bg-card">
+          <div className="border-b bg-muted p-2 text-sm font-semibold">In transit ({transit.length}) — cannot be sold</div>
+          <table className="w-full text-sm">
+            <tbody>
+              {transit.map((r) => (
+                <tr key={r.id} className="border-t">
+                  <td className="p-2 font-mono">{r.product_code}<div className="text-xs text-muted-foreground">{r.imei}</div></td>
+                  <td className="p-2">{r.models?.brand} {r.models?.model}</td>
+                  <td className="p-2">{r.storage}</td>
+                  <td className="p-2">{r.color}</td>
+                  <td className="p-2">From {r.shops?.name}</td>
+                  <td className="p-2 text-right">{yen(r.selling_price)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

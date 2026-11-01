@@ -30,6 +30,8 @@ function Layout() {
     { to: "/add", label: "Add Product" },
     { to: "/stock", label: "Stock" },
     { to: "/sales", label: "Sales" },
+    { to: "/find", label: "Find in other shops" },
+    { to: "/transfers", label: "Transfers" },
     ...(me?.role === "owner"
       ? [
           { to: "/dashboard", label: "Dashboard" },

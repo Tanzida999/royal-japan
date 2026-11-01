@@ -35,4 +35,12 @@ describe("alerts", () => {
     expect(buildAlerts({ sales: [], products: [p({ status: "in_stock", created_at: "2026-09-02T00:00:00Z" })], cost: {}, now }).length).toBe(1);
     expect(buildAlerts({ sales: [], products: [p({ status: "in_stock", created_at: "2026-09-03T00:00:00Z" })], cost: {}, now }).length).toBe(0);
   });
+  const tr = (o: object) => ({ product_id: "p", from_shop_id: "A", to_shop_id: "B", status: "accepted", accepted_at: null, reject_reason: null, ...o });
+  it("in transit over 24 hours", () => {
+    expect(buildAlerts({ sales: [], products: [p({ status: "in_transit" })], cost: {}, now, transfers: [tr({ accepted_at: "2026-10-30T23:00:00Z" })] }).map((x) => x.kind)).toEqual(["In transit 24h+"]);
+    expect(buildAlerts({ sales: [], products: [p({ status: "in_transit" })], cost: {}, now, transfers: [tr({ accepted_at: "2026-10-31T01:00:00Z" })] }).length).toBe(0);
+  });
+  it("rejected request", () => {
+    expect(buildAlerts({ sales: [], products: [p({})], cost: {}, now, transfers: [tr({ status: "rejected", reject_reason: "Reserved" })] }).map((x) => x.kind)).toEqual(["Transfer rejected"]);
+  });
 });
