@@ -707,6 +707,32 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      request_transfer_to_shop: {
+        Args: { _product_id: string; _to_shop_id: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          from_shop_id: string
+          id: string
+          product_id: string
+          received_at: string | null
+          received_by: string | null
+          reject_reason: string | null
+          requested_by: string
+          status: string
+          to_shop_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transfers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       respond_transfer: {
         Args: { _accept: boolean; _reason: string; _transfer_id: string }
         Returns: {

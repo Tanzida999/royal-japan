@@ -29,6 +29,13 @@
       "when": 1793547170385,
       "tag": "0003_shop_profiles_cart_checkout_transfer_limits",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793547263652,
+      "tag": "0004_current_shop_transfer_request",
+      "breakpoints": true
     }
   ]
 }
