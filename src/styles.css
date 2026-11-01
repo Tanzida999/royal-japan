@@ -166,7 +166,9 @@
   .no-print { display: none !important; }
   .label-print { width: 50mm; padding: 2mm; }
   .label-print svg { max-width: 100%; height: auto; }
-  .receipt-print { width: 72mm; }
+  .receipt-print { width: 76mm; max-width: 76mm; padding: 2mm; }
+  .receipt-print.receipt-a4 { width: 100%; max-width: 186mm; padding: 4mm; }
+  .receipt-print { overflow-wrap: anywhere; }
   .labels-sheet { display: flex; flex-wrap: wrap; gap: 2mm; width: 100%; }
   .labels-sheet .label-print { position: static; break-inside: avoid; border: 1px dashed var(--color-border); }
   .labels-sheet-item { break-inside: avoid; }
