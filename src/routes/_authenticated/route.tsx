@@ -29,7 +29,15 @@ function Layout() {
     { to: "/sell", label: "Sell" },
     { to: "/add", label: "Add Product" },
     { to: "/stock", label: "Stock" },
-    ...(me?.role === "owner" ? [{ to: "/dashboard", label: "Dashboard" }] : []),
+    { to: "/sales", label: "Sales" },
+    ...(me?.role === "owner"
+      ? [
+          { to: "/dashboard", label: "Dashboard" },
+          { to: "/stock-check", label: "Stock Check" },
+          { to: "/suppliers", label: "Suppliers" },
+          { to: "/staff", label: "Staff" },
+        ]
+      : []),
   ] as const;
 
   return (
