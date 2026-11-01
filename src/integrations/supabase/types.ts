@@ -39,23 +39,29 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          paid_amount: number | null
           product_id: string
           purchase_price: number
           supplier: string | null
+          supplier_payment: string
         }
         Insert: {
           created_at?: string
           created_by: string
+          paid_amount?: number | null
           product_id: string
           purchase_price: number
           supplier?: string | null
+          supplier_payment?: string
         }
         Update: {
           created_at?: string
           created_by?: string
+          paid_amount?: number | null
           product_id?: string
           purchase_price?: number
           supplier?: string | null
+          supplier_payment?: string
         }
         Relationships: [
           {
@@ -79,6 +85,7 @@ export type Database = {
           product_code: string
           selling_price: number
           shop_id: string
+          staff_code: string | null
           status: string
           storage: string
         }
@@ -93,6 +100,7 @@ export type Database = {
           product_code: string
           selling_price: number
           shop_id: string
+          staff_code?: string | null
           status?: string
           storage: string
         }
@@ -107,6 +115,7 @@ export type Database = {
           product_code?: string
           selling_price?: number
           shop_id?: string
+          staff_code?: string | null
           status?: string
           storage?: string
         }
@@ -132,16 +141,19 @@ export type Database = {
           id: string
           name: string
           shop_id: string | null
+          staff_code: string
         }
         Insert: {
           id: string
           name: string
           shop_id?: string | null
+          staff_code?: string
         }
         Update: {
           id?: string
           name?: string
           shop_id?: string | null
+          staff_code?: string
         }
         Relationships: [
           {
@@ -164,6 +176,7 @@ export type Database = {
           sale_price: number
           shop_id: string
           sold_by: string
+          staff_code: string | null
         }
         Insert: {
           created_at?: string
@@ -175,6 +188,7 @@ export type Database = {
           sale_price: number
           shop_id: string
           sold_by: string
+          staff_code?: string | null
         }
         Update: {
           created_at?: string
@@ -186,6 +200,7 @@ export type Database = {
           sale_price?: number
           shop_id?: string
           sold_by?: string
+          staff_code?: string | null
         }
         Relationships: [
           {
@@ -248,11 +263,14 @@ export type Database = {
           _condition: string
           _imei: string
           _model_id: string
+          _paid_amount: number
           _purchase_price: number
           _selling_price: number
           _shop_id: string
+          _staff_code: string
           _storage: string
           _supplier: string
+          _supplier_payment: string
         }
         Returns: {
           color: string
@@ -265,6 +283,7 @@ export type Database = {
           product_code: string
           selling_price: number
           shop_id: string
+          staff_code: string | null
           status: string
           storage: string
         }
@@ -275,12 +294,45 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      add_products_bulk: {
+        Args: {
+          _items: Json
+          _paid_amount: number
+          _shop_id: string
+          _staff_code: string
+          _supplier: string
+          _supplier_payment: string
+        }
+        Returns: {
+          color: string
+          condition: string
+          created_at: string
+          created_by: string
+          id: string
+          imei: string
+          model_id: string
+          product_code: string
+          selling_price: number
+          shop_id: string
+          staff_code: string | null
+          status: string
+          storage: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      check_staff_code: { Args: { _code: string }; Returns: string }
       complete_sale: {
         Args: {
           _customer_name: string
           _payment: string
           _product_id: string
           _sale_price: number
+          _staff_code: string
         }
         Returns: {
           created_at: string
@@ -292,6 +344,7 @@ export type Database = {
           sale_price: number
           shop_id: string
           sold_by: string
+          staff_code: string | null
         }
         SetofOptions: {
           from: "*"
@@ -307,6 +360,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      my_shop_id: { Args: never; Returns: string }
     }
     Enums: {
       app_role: "owner" | "staff"

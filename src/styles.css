@@ -167,4 +167,8 @@
   .label-print { width: 50mm; padding: 2mm; }
   .label-print svg { max-width: 100%; height: auto; }
   .receipt-print { width: 72mm; }
+  .labels-sheet { display: flex; flex-wrap: wrap; gap: 2mm; width: 100%; }
+  .labels-sheet .label-print { position: static; break-inside: avoid; border: 1px dashed var(--color-border); }
+  .labels-sheet-item { break-inside: avoid; }
+  .staff-card { width: 85mm; border: 1px solid var(--color-border) !important; }
 }

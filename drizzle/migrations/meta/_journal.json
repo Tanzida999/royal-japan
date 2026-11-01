@@ -8,6 +8,13 @@
       "when": 1793540086765,
       "tag": "0000_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1793541534654,
+      "tag": "0001_staff_codes_suppliers_bulk",
+      "breakpoints": true
     }
   ]
 }
