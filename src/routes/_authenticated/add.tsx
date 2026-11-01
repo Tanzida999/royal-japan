@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { meQuery, modelsQuery, shopsQuery } from "@/lib/app";
+import { jstDate, meQuery, modelsQuery, shopsQuery } from "@/lib/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrintLabel, type LabelData } from "@/components/PrintLabel";
+import { CameraScan } from "@/components/CameraScan";
+import { useCurrentShop } from "@/lib/shop-context";
+import { imeiProblem } from "@/lib/pos";
 import { StaffScan } from "@/components/StaffScan";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 
@@ -47,7 +50,9 @@ function AddProduct() {
   const { data: models = [] } = useQuery(modelsQuery);
 
   const [bulk, setBulk] = useState(false);
-  const [shopId, setShopId] = useState("");
+  const { shopId, setShopId, isOwner } = useCurrentShop();
+  const imeiRef = useRef<HTMLInputElement>(null);
+  const brandRef = useRef<HTMLSelectElement>(null);
   const [brand, setBrand] = useState("");
   const [modelId, setModelId] = useState("");
   const [imei, setImei] = useState("");
@@ -65,9 +70,7 @@ function AddProduct() {
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<LabelData[] | null>(null);
 
-  useEffect(() => {
-    if (!shopId && me?.shop_id) setShopId(me.shop_id);
-  }, [me, shopId]);
+  useEffect(() => { if (!bulk && !saved) imeiRef.current?.focus(); }, [bulk, saved]);
 
   const brands = useMemo(() => [...new Set(models.map((m) => m.brand))], [models]);
   const brandModels = models.filter((m) => m.brand === brand);
@@ -75,14 +78,16 @@ function AddProduct() {
   // Existing IMEIs, for duplicate checks in bulk mode
   const { data: existingImeis = [] } = useQuery({
     queryKey: ["stock", "imeis"],
-    enabled: bulk,
+
     queryFn: async () => {
       const { data, error } = await supabase.from("products").select("imei");
       if (error) throw error;
       return data.map((d) => d.imei);
     },
   });
-  const rowStatus = validateBulkRows(rows, new Set(existingImeis));
+  const existing = new Set(existingImeis);
+  const imeiError = imei ? imeiProblem(imei, existing) : "";
+  const rowStatus = validateBulkRows(rows, existing);
 
   const modelName = (id: string) => {
     const m = models.find((x) => x.id === id);
@@ -98,6 +103,7 @@ function AddProduct() {
     e.preventDefault();
     setError("");
     if (!staffCode) return setError("Scan your staff code first");
+    if (imeiError) return setError(imeiError);
     const pe = paymentOk();
     if (pe) return setError(pe);
     const parsed = schema.safeParse({
@@ -133,7 +139,7 @@ function AddProduct() {
       return setError(error.message.includes("duplicate") ? "This IMEI or product code already exists" : error.message);
     }
     setSaved([
-      { product_code: data.product_code, model: modelName(v.model_id), storage: v.storage, selling_price: v.selling_price },
+      { product_code: data.product_code, model: modelName(v.model_id), storage: v.storage, selling_price: v.selling_price, imei: data.imei, color: data.color, condition: data.condition, purchase_date: jstDate(data.created_at), shop: shops.find(s => s.id === data.shop_id)?.name ?? "" },
     ]);
     qc.invalidateQueries({ queryKey: ["stock"] });
     qc.invalidateQueries({ queryKey: ["suppliers"] });
@@ -174,7 +180,7 @@ function AddProduct() {
         product_code: p.product_code,
         model: modelName(p.model_id),
         storage: p.storage,
-        selling_price: p.selling_price,
+        selling_price: p.selling_price, imei: p.imei, color: p.color, condition: p.condition, purchase_date: jstDate(p.created_at), shop: shops.find(s => s.id === p.shop_id)?.name ?? "",
       })),
     );
     qc.invalidateQueries({ queryKey: ["stock"] });
@@ -197,8 +203,8 @@ function AddProduct() {
             </p>
           )}
         </div>
-        {saved.length === 1 ? (
-          <PrintLabel data={saved[0]!} />
+        {saved.length === 1 && saved[0] ? (
+          <PrintLabel data={saved[0]} />
         ) : (
           <div className="print-area labels-sheet flex flex-wrap gap-2">
             {saved.map((l) => (
@@ -221,7 +227,7 @@ function AddProduct() {
   const shared = (
     <>
       <Field label="Shop">
-        <select className="field" value={shopId} onChange={(e) => setShopId(e.target.value)}>
+        <select aria-label="Purchase shop" className="field" value={shopId} disabled={!isOwner} onChange={(e) => setShopId(e.target.value)}>
           <option value="">Select shop</option>
           {shops.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
@@ -261,16 +267,22 @@ function AddProduct() {
             {shared}
             <Field label="IMEI (scan or type)">
               <Input
+                ref={imeiRef}
+                aria-label="IMEI"
+                autoFocus
                 inputMode="numeric"
                 maxLength={15}
                 value={imei}
                 onChange={(e) => setImei(e.target.value.replace(/\D/g, ""))}
-                onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); brandRef.current?.focus(); } }}
                 placeholder="15 digits"
               />
+              {imeiError && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
+              <CameraScan onScan={c => { setImei(c.trim()); brandRef.current?.focus(); }} />
             </Field>
             <Field label="Brand">
               <select
+                ref={brandRef}
                 className="field"
                 value={brand}
                 onChange={(e) => {
@@ -311,7 +323,7 @@ function AddProduct() {
             </Field>
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={busy} className="w-full sm:w-auto">
+          <Button type="submit" disabled={busy || Boolean(imeiError)} className="w-full sm:w-auto">
             {busy ? "Saving…" : "Save Product"}
           </Button>
         </form>
@@ -375,7 +387,7 @@ function AddProduct() {
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-muted-foreground">Tip: press Enter after scanning an IMEI to add the next row (copies model, color, prices).</p>
+          <CameraScan onScan={c => setRows(rs => { const i = rs.findIndex(r => !r.imei); return i >= 0 ? rs.map((r,j) => j === i ? { ...r, imei: c.trim() } : r) : [...rs, { ...emptyRow(), imei: c.trim() }]; })} />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRows((rs) => [...rs, emptyRow()])}>Add row</Button>

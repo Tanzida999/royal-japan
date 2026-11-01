@@ -17,6 +17,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/find'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
+import { Route as AuthenticatedShopsRouteImport } from './routes/_authenticated/shops'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/stock'
 import { Route as AuthenticatedStockCheckRouteImport } from './routes/_authenticated/stock-check'
@@ -62,6 +63,11 @@ const AuthenticatedSellRoute = AuthenticatedSellRouteImport.update({
   path: '/sell',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedShopsRoute = AuthenticatedShopsRouteImport.update({
+  id: '/shops',
+  path: '/shops',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/find': typeof AuthenticatedFindRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sell': typeof AuthenticatedSellRoute
+  '/shops': typeof AuthenticatedShopsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/find': typeof AuthenticatedFindRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sell': typeof AuthenticatedSellRoute
+  '/shops': typeof AuthenticatedShopsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/_authenticated/find': typeof AuthenticatedFindRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
+  '/_authenticated/shops': typeof AuthenticatedShopsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stock': typeof AuthenticatedStockRoute
   '/_authenticated/stock-check': typeof AuthenticatedStockCheckRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/find'
     | '/sales'
     | '/sell'
+    | '/shops'
     | '/staff'
     | '/stock'
     | '/stock-check'
@@ -156,6 +166,7 @@ export interface FileRouteTypes {
     | '/find'
     | '/sales'
     | '/sell'
+    | '/shops'
     | '/staff'
     | '/stock'
     | '/stock-check'
@@ -171,6 +182,7 @@ export interface FileRouteTypes {
     | '/_authenticated/find'
     | '/_authenticated/sales'
     | '/_authenticated/sell'
+    | '/_authenticated/shops'
     | '/_authenticated/staff'
     | '/_authenticated/stock'
     | '/_authenticated/stock-check'
@@ -242,6 +254,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSellRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/shops': {
+      id: '/_authenticated/shops'
+      path: '/shops'
+      fullPath: '/shops'
+      preLoaderRoute: typeof AuthenticatedShopsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/staff': {
       id: '/_authenticated/staff'
       path: '/staff'
@@ -286,6 +305,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFindRoute: typeof AuthenticatedFindRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
+  AuthenticatedShopsRoute: typeof AuthenticatedShopsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStockRoute: typeof AuthenticatedStockRoute
   AuthenticatedStockCheckRoute: typeof AuthenticatedStockCheckRoute
@@ -299,6 +319,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFindRoute: AuthenticatedFindRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
+  AuthenticatedShopsRoute: AuthenticatedShopsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStockRoute: AuthenticatedStockRoute,
   AuthenticatedStockCheckRoute: AuthenticatedStockCheckRoute,

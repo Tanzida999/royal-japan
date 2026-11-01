@@ -1,3 +1,5 @@
+import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -23,14 +25,15 @@ function Dashboard() {
   const today = jstDate(new Date());
   const [year, setYear] = useState(today.slice(0, 4));
   const [monthSel, setMonthSel] = useState(today.slice(5, 7));
-  const [shopSel, setShopSel] = useState("");
+  const { shopId: shopSel } = useCurrentShop();
+  const { data: transitLimit = 24 } = useQuery(settingsQuery);
 
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
       const [sales, products, costs, transfers] = await Promise.all([
         supabase.from("sales").select("receipt_no, product_id, sale_price, shop_id, created_at"),
-        supabase.from("products").select("id, product_code, shop_id, status, created_at, storage, models(brand, model)"),
+        supabase.from("products").select("id, product_code, shop_id, current_shop_id, status, created_at, storage, models(brand, model)"),
         supabase.from("product_costs").select("product_id, purchase_price"),
         supabase.from("transfers").select("product_id, from_shop_id, to_shop_id, status, accepted_at, reject_reason"),
       ]);
@@ -76,11 +79,11 @@ function Dashboard() {
   let stockValue = 0;
   for (const p of data.products) {
     if (p.status !== "in_stock") continue;
-    if (inShop(p.shop_id)) {
+    if (inShop(p.current_shop_id ?? p.shop_id)) {
       stock++;
       stockValue += cost[p.id] ?? 0;
     }
-    const b = byShop[p.shop_id];
+    const b = byShop[p.current_shop_id ?? p.shop_id];
     if (b) {
       b.stock++;
       b.stockValue += cost[p.id] ?? 0;
@@ -97,6 +100,7 @@ function Dashboard() {
     cost,
     transfers: data.transfers,
     now: new Date(),
+    transitLimit,
   }).filter((a) => !shopSel || a.shopIds.includes(shopSel));
 
   return (
@@ -110,10 +114,7 @@ function Dashboard() {
           <option value="">Whole year</option>
           {MONTHS.map((m, i) => <option key={m} value={String(i + 1).padStart(2, "0")}>{m}</option>)}
         </select>
-        <select className="field w-44" value={shopSel} onChange={(e) => setShopSel(e.target.value)} aria-label="Shop">
-          <option value="">All shops</option>
-          {shops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        <ShopSelect />
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card title="Sold today" value={String(totals.today.sold)} />

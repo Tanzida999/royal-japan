@@ -1,3 +1,5 @@
+import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -41,7 +43,7 @@ function Sales() {
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const [shop, setShop] = useState("");
+  const { shopId: shop } = useCurrentShop();
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
 
   // Database only returns the staff member's own shop sales.
@@ -116,10 +118,7 @@ function Sales() {
         <Input type="date" className="w-full sm:w-40" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
         <Input type="date" className="w-full sm:w-40" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" />
         {isOwner && (
-          <select className="field w-full sm:w-48" value={shop} onChange={(e) => setShop(e.target.value)}>
-            <option value="">All shops</option>
-            {shops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+          <ShopSelect />
         )}
       </div>
       <div className="text-sm text-muted-foreground">

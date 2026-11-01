@@ -1,3 +1,5 @@
+import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useRef, useState } from "react";
@@ -20,7 +22,7 @@ type Wrong = { code: string; reason: string };
 
 function StockCheck() {
   const { data: shops = [] } = useQuery(shopsQuery);
-  const [shop, setShop] = useState("");
+  const { shopId: shop, setShopId: setShop } = useCurrentShop();
   const [code, setCode] = useState("");
   const [found, setFound] = useState<string[]>([]);
   const [wrong, setWrong] = useState<Wrong[]>([]);

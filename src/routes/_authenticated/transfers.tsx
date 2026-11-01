@@ -1,6 +1,8 @@
+import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { jstDateTime, meQuery, shopsQuery } from "@/lib/app";
 import { Button } from "@/components/ui/button";
@@ -22,27 +24,33 @@ type T = {
   created_at: string;
   accepted_at: string | null;
   received_at: string | null;
+  cancel_reason: string | null;
+  cancelled_at: string | null;
   products: { product_code: string; imei: string; storage: string; color: string; models: { brand: string; model: string } | null } | null;
 };
 
-const STATUSES = ["requested", "accepted", "rejected", "received", "cancelled"];
+const STATUSES = ["requested", "accepted", "rejected", "received", "cancelled", "expired"];
 
 function Transfers() {
   const qc = useQueryClient();
   const { data: me } = useQuery(meQuery);
   const { data: shops = [] } = useQuery(shopsQuery);
   const isOwner = me?.role === "owner";
-  const myShop = me?.shop_id ?? "";
+  const { shopId: myShop } = useCurrentShop();
+  const { data: limit = 24 } = useQuery(settingsQuery);
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => { const timer = setInterval(() => setNow(new Date()), 30_000); return () => clearInterval(timer); }, []);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [fStatus, setFStatus] = useState("");
-  const [fShop, setFShop] = useState("");
+  const fShop = myShop;
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["transfers", "list"],
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("transfers")
-        .select("id, product_id, from_shop_id, to_shop_id, status, requested_by, reject_reason, created_at, accepted_at, received_at, products(product_code, imei, storage, color, models(brand, model))")
+        .select("id, product_id, from_shop_id, to_shop_id, status, requested_by, reject_reason, created_at, accepted_at, received_at, cancel_reason, cancelled_at, products(product_code, imei, storage, color, models(brand, model))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as T[];
@@ -63,9 +71,10 @@ function Transfers() {
     qc.invalidateQueries({ queryKey: ["dashboard"] });
   }
 
-  const incoming = rows.filter((t) => t.status === "requested" && t.from_shop_id === myShop);
-  const coming = rows.filter((t) => t.status === "accepted" && t.to_shop_id === myShop);
-  const all = rows.filter((t) => (!fStatus || t.status === fStatus) && (!fShop || t.from_shop_id === fShop || t.to_shop_id === fShop));
+  const effectiveRows = rows.map(t => t.status === "requested" && new Date(t.created_at).getTime() + limit * 3_600_000 <= now.getTime() ? { ...t, status: "expired" } : t);
+  const incoming = effectiveRows.filter((t) => t.status === "requested" && t.from_shop_id === myShop);
+  const coming = effectiveRows.filter((t) => t.status === "accepted" && t.to_shop_id === myShop);
+  const all = effectiveRows.filter((t) => (!fStatus || t.status === fStatus) && (!fShop || t.from_shop_id === fShop || t.to_shop_id === fShop));
 
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
 
@@ -78,7 +87,7 @@ function Transfers() {
         <>
           <Section title={`Incoming requests (${incoming.length})`}>
             {incoming.map((t) => (
-              <Row key={t.id} t={t} phone={phone(t)} shopName={shopName}>
+              <Row key={t.id} t={t} phone={phone(t)} shopName={shopName} limit={limit} now={now}>
                 <IncomingActions
                   onAccept={() => run(supabase.rpc("respond_transfer", { _transfer_id: t.id, _accept: true, _reason: "" }), `Accepted ${t.products?.product_code} — now in transit`)}
                   onReject={(r) => run(supabase.rpc("respond_transfer", { _transfer_id: t.id, _accept: false, _reason: r }), `Rejected ${t.products?.product_code}`)}
@@ -89,7 +98,7 @@ function Transfers() {
 
           <Section title={`Coming to my shop (${coming.length})`}>
             {coming.map((t) => (
-              <Row key={t.id} t={t} phone={phone(t)} shopName={shopName}>
+              <Row key={t.id} t={t} phone={phone(t)} shopName={shopName} limit={limit} now={now}>
                 <ReceiveScan onReceive={(c) => run(supabase.rpc("receive_transfer", { _transfer_id: t.id, _code: c }), `Received ${t.products?.product_code}`)} />
               </Row>
             ))}
@@ -106,16 +115,14 @@ function Transfers() {
               {STATUSES.map((s) => <option key={s}>{s}</option>)}
             </select>
             {isOwner && (
-              <select className="field w-44" value={fShop} onChange={(e) => setFShop(e.target.value)} aria-label="Shop">
-                <option value="">All shops</option>
-                {shops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <ShopSelect />
             )}
           </div>
         }
       >
         {all.map((t) => (
-          <Row key={t.id} t={t} phone={phone(t)} shopName={shopName}>
+          <Row key={t.id} t={t} phone={phone(t)} shopName={shopName} limit={limit} now={now}>
+            {isOwner && t.status === "accepted" && t.accepted_at && new Date(t.accepted_at).getTime() + limit * 3_600_000 < now.getTime() && <OverdueCancel onCancel={reason => run(supabase.rpc("cancel_overdue_transfer", { _transfer_id: t.id, _reason: reason }), `Cancelled ${t.products?.product_code} — returned to source shop`)} />}
             {t.status === "requested" && t.requested_by === me?.id && (
               <Button size="sm" variant="outline" onClick={() => run(supabase.rpc("cancel_transfer", { _transfer_id: t.id }), `Cancelled ${t.products?.product_code}`)}>
                 Cancel
@@ -143,7 +150,7 @@ function Section({ title, filters, children }: { title: string; filters?: React.
   );
 }
 
-function Row({ t, phone, shopName, children }: { t: T; phone: string; shopName: (id: string) => string; children?: React.ReactNode }) {
+function Row({ t, phone, shopName, children, limit, now }: { limit: number; now: Date; t: T; phone: string; shopName: (id: string) => string; children?: React.ReactNode }) {
   return (
     <li className="flex flex-wrap items-center gap-3 p-3">
       <div className="mr-auto">
@@ -156,8 +163,10 @@ function Row({ t, phone, shopName, children }: { t: T; phone: string; shopName: 
           {t.accepted_at && ` · ${t.status === "rejected" ? "rejected" : "accepted"} ${jstDateTime(t.accepted_at)}`}
           {t.received_at && ` · received ${jstDateTime(t.received_at)}`}
           {t.reject_reason && ` · reason: ${t.reject_reason}`}
+          {t.cancel_reason && ` · cancellation: ${t.cancel_reason} · ${jstDateTime(t.cancelled_at ?? t.created_at)}`}
         </div>
       </div>
+      {t.status === "accepted" && t.accepted_at && <TimeRemaining start={t.accepted_at} limit={limit} now={now} />}
       {children}
     </li>
   );
@@ -197,4 +206,14 @@ function ReceiveScan({ onReceive }: { onReceive: (code: string) => void }) {
       <Button size="sm" type="submit">Received</Button>
     </form>
   );
+}
+
+function TimeRemaining({ start, limit, now }: { start: string; limit: number; now: Date }) {
+  const ms = new Date(start).getTime() + limit * 3_600_000 - now.getTime();
+  const minutes = Math.ceil(Math.abs(ms) / 60_000);
+  return <span className={`text-sm font-semibold ${ms < 0 ? "text-destructive" : "text-primary"}`}>{ms < 0 ? "Overdue by" : "Remaining"} {Math.floor(minutes / 60)}h {minutes % 60}m</span>;
+}
+function OverdueCancel({ onCancel }: { onCancel: (reason: string) => void }) {
+  const [open, setOpen] = useState(false); const [reason, setReason] = useState("");
+  return open ? <div className="flex flex-wrap gap-2"><Input aria-label="Cancellation reason" placeholder="Cancellation reason" className="w-48" value={reason} maxLength={300} onChange={e => setReason(e.target.value)} /><Button variant="destructive" size="sm" disabled={!reason.trim()} onClick={() => onCancel(reason)}>Confirm cancellation</Button><Button variant="outline" size="sm" onClick={() => setOpen(false)}>Back</Button></div> : <Button variant="outline" size="sm" onClick={() => setOpen(true)}>Cancel transfer</Button>;
 }
