@@ -17,11 +17,13 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/find'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
+import { Route as AuthenticatedShopsRouteImport } from './routes/_authenticated/shops'
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/stock'
 import { Route as AuthenticatedStockCheckRouteImport } from './routes/_authenticated/stock-check'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
+import { Route as ApiPublicJobsExpireTransfersRouteImport } from './routes/api/public/jobs/expire-transfers'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -62,6 +64,11 @@ const AuthenticatedSellRoute = AuthenticatedSellRouteImport.update({
   path: '/sell',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedShopsRoute = AuthenticatedShopsRouteImport.update({
+  id: '/shops',
+  path: '/shops',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedStaffRoute = AuthenticatedStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
@@ -87,6 +94,12 @@ const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
   path: '/transfers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicJobsExpireTransfersRoute =
+  ApiPublicJobsExpireTransfersRouteImport.update({
+    id: '/api/public/jobs/expire-transfers',
+    path: '/api/public/jobs/expire-transfers',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,11 +109,13 @@ export interface FileRoutesByFullPath {
   '/find': typeof AuthenticatedFindRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sell': typeof AuthenticatedSellRoute
+  '/shops': typeof AuthenticatedShopsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,11 +125,13 @@ export interface FileRoutesByTo {
   '/find': typeof AuthenticatedFindRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sell': typeof AuthenticatedSellRoute
+  '/shops': typeof AuthenticatedShopsRoute
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -126,11 +143,13 @@ export interface FileRoutesById {
   '/_authenticated/find': typeof AuthenticatedFindRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
+  '/_authenticated/shops': typeof AuthenticatedShopsRoute
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stock': typeof AuthenticatedStockRoute
   '/_authenticated/stock-check': typeof AuthenticatedStockCheckRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
+  '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -142,11 +161,13 @@ export interface FileRouteTypes {
     | '/find'
     | '/sales'
     | '/sell'
+    | '/shops'
     | '/staff'
     | '/stock'
     | '/stock-check'
     | '/suppliers'
     | '/transfers'
+    | '/api/public/jobs/expire-transfers'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -156,11 +177,13 @@ export interface FileRouteTypes {
     | '/find'
     | '/sales'
     | '/sell'
+    | '/shops'
     | '/staff'
     | '/stock'
     | '/stock-check'
     | '/suppliers'
     | '/transfers'
+    | '/api/public/jobs/expire-transfers'
   id:
     | '__root__'
     | '/'
@@ -171,17 +194,20 @@ export interface FileRouteTypes {
     | '/_authenticated/find'
     | '/_authenticated/sales'
     | '/_authenticated/sell'
+    | '/_authenticated/shops'
     | '/_authenticated/staff'
     | '/_authenticated/stock'
     | '/_authenticated/stock-check'
     | '/_authenticated/suppliers'
     | '/_authenticated/transfers'
+    | '/api/public/jobs/expire-transfers'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiPublicJobsExpireTransfersRoute: typeof ApiPublicJobsExpireTransfersRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -242,6 +268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSellRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/shops': {
+      id: '/_authenticated/shops'
+      path: '/shops'
+      fullPath: '/shops'
+      preLoaderRoute: typeof AuthenticatedShopsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/staff': {
       id: '/_authenticated/staff'
       path: '/staff'
@@ -277,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTransfersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/jobs/expire-transfers': {
+      id: '/api/public/jobs/expire-transfers'
+      path: '/api/public/jobs/expire-transfers'
+      fullPath: '/api/public/jobs/expire-transfers'
+      preLoaderRoute: typeof ApiPublicJobsExpireTransfersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -286,6 +326,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFindRoute: typeof AuthenticatedFindRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
+  AuthenticatedShopsRoute: typeof AuthenticatedShopsRoute
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStockRoute: typeof AuthenticatedStockRoute
   AuthenticatedStockCheckRoute: typeof AuthenticatedStockCheckRoute
@@ -299,6 +340,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFindRoute: AuthenticatedFindRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
+  AuthenticatedShopsRoute: AuthenticatedShopsRoute,
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStockRoute: AuthenticatedStockRoute,
   AuthenticatedStockCheckRoute: AuthenticatedStockCheckRoute,
@@ -313,6 +355,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiPublicJobsExpireTransfersRoute: ApiPublicJobsExpireTransfersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

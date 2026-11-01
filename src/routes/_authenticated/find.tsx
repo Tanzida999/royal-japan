@@ -1,3 +1,6 @@
+import { pageMeta } from "@/lib/metadata";
+import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -7,12 +10,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export const Route = createFileRoute("/_authenticated/find")({
-  head: () => ({ meta: [{ title: "Find in Other Shops — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Find in Other Shops — Mobile Shop Manager", "Find available phones at other shops and request transfers."),
   component: Find,
 });
 
 function Find() {
   const qc = useQueryClient();
+  const { shopId } = useCurrentShop();
+  const { data: limit = 24 } = useQuery(settingsQuery);
   const { data: me } = useQuery(meQuery);
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -27,25 +32,26 @@ function Find() {
     },
   });
   const { data: open = [] } = useQuery({
-    queryKey: ["transfers", "open"],
+    queryKey: ["transfers", "open", limit],
+    refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("transfers").select("product_id").in("status", ["requested", "accepted"]);
+      const { data, error } = await supabase.from("transfers").select("product_id, status, created_at").in("status", ["requested", "accepted"]);
       if (error) throw error;
-      return data.map((t) => t.product_id);
+      return data.filter(t => t.status === "accepted" || new Date(t.created_at).getTime() + limit * 3_600_000 > Date.now()).map((t) => t.product_id);
     },
   });
 
   const q = search.trim().toLowerCase();
   const list = rows.filter(
     (r) =>
-      r.current_shop_id !== me?.shop_id &&
+      r.current_shop_id !== shopId &&
       (!q || [r.imei, r.product_code, r.models?.brand, r.models?.model].join(" ").toLowerCase().includes(q)),
   );
 
   async function request(p: ProductRow) {
     setBusy(p.id);
     setMsg(null);
-    const { error } = await supabase.rpc("request_transfer", { _product_id: p.id });
+    const { error } = await supabase.rpc("request_transfer_to_shop", { _product_id: p.id, _to_shop_id: shopId });
     setBusy("");
     if (error) return setMsg({ ok: false, text: error.message });
     setMsg({ ok: true, text: `Requested ${p.product_code} from ${p.shops?.name}` });
@@ -58,7 +64,7 @@ function Find() {
         <h1 className="mr-auto text-2xl font-bold">Find in other shops ({list.length})</h1>
         <Input className="w-full sm:w-72" placeholder="Search model or IMEI…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
-      {!me?.shop_id && <p className="text-sm text-muted-foreground">Your account has no shop, so you can browse but not request.</p>}
+      {!shopId && <p className="text-sm text-muted-foreground">Your account has no shop, so you can browse but not request.</p>}
       {msg && <p className={`font-semibold ${msg.ok ? "text-primary" : "text-destructive"}`}>{msg.text}</p>}
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">
@@ -89,7 +95,7 @@ function Find() {
                   <td className="p-2">{r.shops?.name}</td>
                   <td className="p-2 text-right">{yen(r.selling_price)}</td>
                   <td className="p-2">
-                    <Button size="sm" variant="outline" disabled={requested || !me?.shop_id || busy === r.id} onClick={() => request(r)}>
+                    <Button size="sm" variant="outline" disabled={requested || !shopId || busy === r.id} onClick={() => request(r)}>
                       {requested ? "Requested" : "Request"}
                     </Button>
                   </td>

@@ -1,14 +1,17 @@
+import { pageMeta } from "@/lib/metadata";
+import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { meQuery, PRODUCT_SELECT, shopsQuery, yen, type ProductRow } from "@/lib/app";
+import { jstDate, meQuery, PRODUCT_SELECT, shopsQuery, yen, type ProductRow } from "@/lib/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PrintLabel, type LabelData } from "@/components/PrintLabel";
 
 export const Route = createFileRoute("/_authenticated/stock")({
-  head: () => ({ meta: [{ title: "Stock — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Stock — Mobile Shop Manager", "View available and in-transit phone inventory at the current shop."),
   component: Stock,
 });
 
@@ -17,7 +20,7 @@ function Stock() {
   const isOwner = me?.role === "owner";
   const { data: shops = [] } = useQuery(shopsQuery);
   const [search, setSearch] = useState("");
-  const [shop, setShop] = useState("");
+  const { shopId: shop } = useCurrentShop();
   const [label, setLabel] = useState<LabelData | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
@@ -74,10 +77,7 @@ function Stock() {
       <div className="flex flex-wrap items-end gap-2">
         <h1 className="mr-auto text-2xl font-bold">Stock ({filtered.length})</h1>
         <Input className="w-full sm:w-64" placeholder="Search code, IMEI, model…" value={search} onChange={(e) => setSearch(e.target.value)} />
-        <select className="field w-full sm:w-56" value={shop} onChange={(e) => setShop(e.target.value)}>
-          <option value="">All shops</option>
-          {shops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-        </select>
+        <ShopSelect />
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">
@@ -123,7 +123,7 @@ function Stock() {
                         product_code: r.product_code,
                         model: `${r.models?.brand} ${r.models?.model}`,
                         storage: r.storage,
-                        selling_price: r.selling_price,
+                        selling_price: r.selling_price, imei: r.imei, color: r.color, condition: r.condition, purchase_date: jstDate(r.created_at), shop: r.shops?.name ?? "",
                       })
                     }
                   >

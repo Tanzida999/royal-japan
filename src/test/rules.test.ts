@@ -43,4 +43,9 @@ describe("alerts", () => {
   it("rejected request", () => {
     expect(buildAlerts({ sales: [], products: [p({})], cost: {}, now, transfers: [tr({ status: "rejected", reject_reason: "Reserved" })] }).map((x) => x.kind)).toEqual(["Transfer rejected"]);
   });
+  it("overdue alerts follow the owner limit", () => {
+    const input = { sales: [], products: [p({ status: "in_transit" })], cost: {}, now, transfers: [tr({ accepted_at: "2026-10-30T23:00:00Z" })] };
+    expect(buildAlerts({ ...input, transitLimit: 48 })).toEqual([]);
+    expect(buildAlerts({ ...input, transitLimit: 12 }).map(a => a.kind)).toEqual(["Transfer overdue"]);
+  });
 });

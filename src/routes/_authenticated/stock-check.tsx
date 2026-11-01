@@ -1,6 +1,9 @@
+import { pageMeta } from "@/lib/metadata";
+import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery, PRODUCT_SELECT, shopsQuery, type ProductRow } from "@/lib/app";
 import { Button } from "@/components/ui/button";
@@ -8,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export const Route = createFileRoute("/_authenticated/stock-check")({
-  head: () => ({ meta: [{ title: "Stock Check — Mobile Shop Manager" }] }),
+  head: () => pageMeta("Stock Check — Mobile Shop Manager", "Reconcile scanned shelf phones against current shop inventory."),
   beforeLoad: async ({ context }) => {
     const me = await context.queryClient.ensureQueryData(meQuery);
     if (me?.role !== "owner") throw redirect({ to: "/sell" });
@@ -20,12 +23,13 @@ type Wrong = { code: string; reason: string };
 
 function StockCheck() {
   const { data: shops = [] } = useQuery(shopsQuery);
-  const [shop, setShop] = useState("");
+  const { shopId: shop, setShopId: setShop } = useCurrentShop();
   const [code, setCode] = useState("");
   const [found, setFound] = useState<string[]>([]);
   const [wrong, setWrong] = useState<Wrong[]>([]);
   const [last, setLast] = useState<{ ok: boolean; text: string } | null>(null);
   const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => { setFound([]); setWrong([]); setLast(null); setCode(""); ref.current?.focus(); }, [shop]);
 
   const { data: all = [] } = useQuery({
     queryKey: ["stock-check-products"],
