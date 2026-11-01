@@ -1,0 +1,138 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { meQuery, PRODUCT_SELECT, shopsQuery, yen, type ProductRow } from "@/lib/app";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PrintLabel, type LabelData } from "@/components/PrintLabel";
+
+export const Route = createFileRoute("/_authenticated/stock")({
+  head: () => ({ meta: [{ title: "Stock — Phone Shop" }] }),
+  component: Stock,
+});
+
+function Stock() {
+  const { data: me } = useQuery(meQuery);
+  const isOwner = me?.role === "owner";
+  const { data: shops = [] } = useQuery(shopsQuery);
+  const [search, setSearch] = useState("");
+  const [shop, setShop] = useState("");
+  const [label, setLabel] = useState<LabelData | null>(null);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["stock"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("products")
+        .select(PRODUCT_SELECT)
+        .eq("status", "in_stock")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as ProductRow[];
+    },
+  });
+
+  // Costs are only readable by owners (enforced in the database); staff get nothing back.
+  const { data: costs = {} } = useQuery({
+    queryKey: ["stock-costs"],
+    enabled: isOwner,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("product_costs").select("product_id, purchase_price");
+      if (error) throw error;
+      return Object.fromEntries(data.map((c) => [c.product_id, c.purchase_price])) as Record<string, number>;
+    },
+  });
+
+  const q = search.trim().toLowerCase();
+  const filtered = rows.filter(
+    (r) =>
+      (!shop || r.shop_id === shop) &&
+      (!q ||
+        [r.product_code, r.imei, r.models?.brand, r.models?.model, r.color, r.storage]
+          .join(" ")
+          .toLowerCase()
+          .includes(q)),
+  );
+
+  if (label) {
+    return (
+      <div className="space-y-4">
+        <PrintLabel data={label} />
+        <div className="no-print flex gap-2">
+          <Button onClick={() => window.print()}>Print Label</Button>
+          <Button variant="outline" onClick={() => setLabel(null)}>Back to stock</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-end gap-2">
+        <h1 className="mr-auto text-2xl font-bold">Stock ({filtered.length})</h1>
+        <Input className="w-full sm:w-64" placeholder="Search code, IMEI, model…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className="field w-full sm:w-56" value={shop} onChange={(e) => setShop(e.target.value)}>
+          <option value="">All shops</option>
+          {shops.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+      </div>
+      <div className="overflow-x-auto rounded-xl border bg-card">
+        <table className="w-full text-sm">
+          <thead className="bg-muted text-left">
+            <tr>
+              <th className="p-2">Code</th>
+              <th className="p-2">Model</th>
+              <th className="p-2">Storage</th>
+              <th className="p-2">Color</th>
+              <th className="p-2">Cond.</th>
+              <th className="p-2">Shop</th>
+              <th className="p-2 text-right">Price</th>
+              {isOwner && <th className="p-2 text-right">Cost</th>}
+              <th className="p-2"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {isLoading && (
+              <tr><td className="p-4 text-muted-foreground" colSpan={9}>Loading…</td></tr>
+            )}
+            {!isLoading && filtered.length === 0 && (
+              <tr><td className="p-4 text-muted-foreground" colSpan={9}>No phones in stock.</td></tr>
+            )}
+            {filtered.map((r) => (
+              <tr key={r.id} className="border-t">
+                <td className="p-2 font-mono">
+                  {r.product_code}
+                  <div className="text-xs text-muted-foreground">{r.imei}</div>
+                </td>
+                <td className="p-2">{r.models?.brand} {r.models?.model}</td>
+                <td className="p-2">{r.storage}</td>
+                <td className="p-2">{r.color}</td>
+                <td className="p-2">{r.condition}</td>
+                <td className="p-2">{r.shops?.name}</td>
+                <td className="p-2 text-right">{yen(r.selling_price)}</td>
+                {isOwner && <td className="p-2 text-right">{costs[r.id] != null ? yen(costs[r.id]) : "—"}</td>}
+                <td className="p-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() =>
+                      setLabel({
+                        product_code: r.product_code,
+                        model: `${r.models?.brand} ${r.models?.model}`,
+                        storage: r.storage,
+                        selling_price: r.selling_price,
+                      })
+                    }
+                  >
+                    Label
+                  </Button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

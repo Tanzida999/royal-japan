@@ -142,3 +142,29 @@
     color: var(--color-foreground);
   }
 }
+
+:root {
+  --primary: oklch(0.52 0.13 190);
+  --primary-foreground: oklch(0.99 0 0);
+  --ring: oklch(0.52 0.13 190);
+}
+
+@utility field {
+  height: 2.25rem;
+  width: 100%;
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid var(--color-input);
+  background: var(--color-background);
+  padding: 0 0.75rem;
+  font-size: 0.875rem;
+}
+
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; border: none; }
+  .no-print { display: none !important; }
+  .label-print { width: 50mm; padding: 2mm; }
+  .label-print svg { max-width: 100%; height: auto; }
+  .receipt-print { width: 72mm; }
+}
