@@ -16,3 +16,4 @@
 - Sales RLS: owners see all, staff see only sales where shop_id = my_shop_id(); new staff accounts are created by the owner-only createStaff server function.
 - Pure business rules (bulk row checks, supplier paid amounts, dashboard alerts) live in src/lib/bulk.ts and src/lib/alerts.ts with tests in src/test/rules.test.ts.
 - Netlify deploy uses netlify.toml with NITRO_PRESET=netlify (server rendering via a Netlify Function), not an SPA redirect, because routes render on the server.
+- Phones have shop_id (bought for) and current_shop_id (where it physically is); selling and stock use current_shop_id. Transfers change location only via request/respond/receive/cancel_transfer RPCs, so a phone in transit can never be sold.
