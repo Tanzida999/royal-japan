@@ -47,7 +47,10 @@ function Sell() {
     if (error) return setError(error.message);
     if (!data) return setError(`Not found: ${q}`);
     const p = data as unknown as ProductRow;
-    if (p.status !== "in_stock") return setError(`Already sold: ${p.product_code} (${p.models?.brand} ${p.models?.model})`);
+    if (p.status === "sold") return setError(`Already sold: ${p.product_code} (${p.models?.brand} ${p.models?.model})`);
+    if (p.status === "in_transit") return setError(`In transit: ${p.product_code} cannot be sold until it is received.`);
+    if (me?.shop_id && p.current_shop_id !== me.shop_id)
+      return setError(`This phone is at ${p.shops?.name ?? "another shop"}. Request a transfer first.`);
     setProduct(p);
     setPrice(String(p.selling_price));
     setCustomer("");

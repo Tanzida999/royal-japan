@@ -79,6 +79,7 @@ export type Database = {
           condition: string
           created_at: string
           created_by: string
+          current_shop_id: string | null
           id: string
           imei: string
           model_id: string
@@ -94,6 +95,7 @@ export type Database = {
           condition: string
           created_at?: string
           created_by: string
+          current_shop_id?: string | null
           id?: string
           imei: string
           model_id: string
@@ -109,6 +111,7 @@ export type Database = {
           condition?: string
           created_at?: string
           created_by?: string
+          current_shop_id?: string | null
           id?: string
           imei?: string
           model_id?: string
@@ -120,6 +123,13 @@ export type Database = {
           storage?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "products_current_shop_id_fkey"
+            columns: ["current_shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "products_model_id_fkey"
             columns: ["model_id"]
@@ -234,6 +244,73 @@ export type Database = {
         }
         Relationships: []
       }
+      transfers: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          from_shop_id: string
+          id: string
+          product_id: string
+          received_at: string | null
+          received_by: string | null
+          reject_reason: string | null
+          requested_by: string
+          status: string
+          to_shop_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          from_shop_id: string
+          id?: string
+          product_id: string
+          received_at?: string | null
+          received_by?: string | null
+          reject_reason?: string | null
+          requested_by: string
+          status?: string
+          to_shop_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+          from_shop_id?: string
+          id?: string
+          product_id?: string
+          received_at?: string | null
+          received_by?: string | null
+          reject_reason?: string | null
+          requested_by?: string
+          status?: string
+          to_shop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transfers_from_shop_id_fkey"
+            columns: ["from_shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transfers_to_shop_id_fkey"
+            columns: ["to_shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -277,6 +354,7 @@ export type Database = {
           condition: string
           created_at: string
           created_by: string
+          current_shop_id: string | null
           id: string
           imei: string
           model_id: string
@@ -308,6 +386,7 @@ export type Database = {
           condition: string
           created_at: string
           created_by: string
+          current_shop_id: string | null
           id: string
           imei: string
           model_id: string
@@ -323,6 +402,29 @@ export type Database = {
           to: "products"
           isOneToOne: false
           isSetofReturn: true
+        }
+      }
+      cancel_transfer: {
+        Args: { _transfer_id: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          from_shop_id: string
+          id: string
+          product_id: string
+          received_at: string | null
+          received_by: string | null
+          reject_reason: string | null
+          requested_by: string
+          status: string
+          to_shop_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transfers"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       check_staff_code: { Args: { _code: string }; Returns: string }
@@ -361,6 +463,75 @@ export type Database = {
         Returns: boolean
       }
       my_shop_id: { Args: never; Returns: string }
+      receive_transfer: {
+        Args: { _code: string; _transfer_id: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          from_shop_id: string
+          id: string
+          product_id: string
+          received_at: string | null
+          received_by: string | null
+          reject_reason: string | null
+          requested_by: string
+          status: string
+          to_shop_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transfers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      request_transfer: {
+        Args: { _product_id: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          from_shop_id: string
+          id: string
+          product_id: string
+          received_at: string | null
+          received_by: string | null
+          reject_reason: string | null
+          requested_by: string
+          status: string
+          to_shop_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transfers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      respond_transfer: {
+        Args: { _accept: boolean; _reason: string; _transfer_id: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          from_shop_id: string
+          id: string
+          product_id: string
+          received_at: string | null
+          received_by: string | null
+          reject_reason: string | null
+          requested_by: string
+          status: string
+          to_shop_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transfers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "owner" | "staff"
