@@ -1,0 +1,10 @@
+# This app uses server rendering (TanStack Start), so no SPA /* -> /index.html
+# redirect is used. Nitro's Netlify preset builds the pages into "dist" and a
+# Netlify Function that serves every route, so refreshing any page works.
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NITRO_PRESET = "netlify"
+  NODE_VERSION = "22"
