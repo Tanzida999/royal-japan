@@ -69,7 +69,7 @@ function AddProduct() {
       selling_price: selling === "" ? -1 : Number(selling),
       supplier,
     });
-    if (!parsed.success) return setError(parsed.error.issues[0].message);
+    if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Invalid input");
     const v = parsed.data;
     setBusy(true);
     const { data, error } = await supabase.rpc("add_product", {
