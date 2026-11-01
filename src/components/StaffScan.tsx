@@ -11,6 +11,7 @@ export function StaffScan({ value, onChange }: { value: string; onChange: (code:
 
   async function verify() {
     const c = text.trim().toUpperCase();
+    if (name && c === value) return; // already verified
     setName("");
     setErr("");
     onChange("", "");
