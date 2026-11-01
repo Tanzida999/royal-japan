@@ -17,6 +17,7 @@ export const Route = createFileRoute("/_authenticated/find")({
 function Find() {
   const qc = useQueryClient();
   const { shopId } = useCurrentShop();
+  const { data: limit = 24 } = useQuery(settingsQuery);
   const { data: me } = useQuery(meQuery);
   const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -31,11 +32,12 @@ function Find() {
     },
   });
   const { data: open = [] } = useQuery({
-    queryKey: ["transfers", "open"],
+    queryKey: ["transfers", "open", limit],
+    refetchInterval: 30_000,
     queryFn: async () => {
-      const { data, error } = await supabase.from("transfers").select("product_id").in("status", ["requested", "accepted"]);
+      const { data, error } = await supabase.from("transfers").select("product_id, status, created_at").in("status", ["requested", "accepted"]);
       if (error) throw error;
-      return data.map((t) => t.product_id);
+      return data.filter(t => t.status === "accepted" || new Date(t.created_at).getTime() + limit * 3_600_000 > Date.now()).map((t) => t.product_id);
     },
   });
 
