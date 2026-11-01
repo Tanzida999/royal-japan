@@ -1,0 +1,4 @@
+import { Button } from "@/components/ui/button";
+export function ReceiptActions({ format, onFormat, onBack, backLabel }: { format: "thermal" | "a4"; onFormat: (f: "thermal" | "a4") => void; onBack: () => void; backLabel: string }) {
+  return <div className="no-print flex flex-wrap justify-center gap-2"><select aria-label="Receipt paper" className="field w-44" value={format} onChange={e => onFormat(e.target.value === "a4" ? "a4" : "thermal")}><option value="thermal">80mm thermal</option><option value="a4">A4</option></select><Button onClick={() => { const style = document.createElement('style'); style.textContent = format === 'a4' ? '@page { size: A4; margin: 12mm; }' : '@page { size: 80mm auto; margin: 2mm; }'; document.head.appendChild(style); window.print(); style.remove(); }}>Print</Button><Button variant="outline" onClick={onBack}>{backLabel}</Button></div>;
+}
