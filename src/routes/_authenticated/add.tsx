@@ -54,6 +54,7 @@ function AddProduct() {
   const { shopId, setShopId, isOwner } = useCurrentShop();
   const imeiRef = useRef<HTMLInputElement>(null);
   const brandRef = useRef<HTMLSelectElement>(null);
+  const bulkImeiRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [brand, setBrand] = useState("");
   const [modelId, setModelId] = useState("");
   const [imei, setImei] = useState("");
@@ -72,6 +73,7 @@ function AddProduct() {
   const [saved, setSaved] = useState<LabelData[] | null>(null);
 
   useEffect(() => { if (!bulk && !saved) imeiRef.current?.focus(); }, [bulk, saved]);
+  useEffect(() => { if (bulk && !saved) bulkImeiRefs.current[rows.length - 1]?.focus(); }, [bulk, rows.length, saved]);
 
   const brands = useMemo(() => [...new Set(models.map((m) => m.brand))], [models]);
   const brandModels = models.filter((m) => m.brand === brand);
@@ -358,6 +360,8 @@ function AddProduct() {
                     </td>
                     <td className="p-1">
                       <Input
+                        ref={el => { bulkImeiRefs.current[i] = el; }}
+                        aria-label={`IMEI row ${i + 1}`}
                         className="min-w-40 font-mono"
                         inputMode="numeric"
                         maxLength={15}
@@ -367,6 +371,7 @@ function AddProduct() {
                           if (e.key === "Enter") {
                             e.preventDefault();
                             if (i === rows.length - 1) setRows((rs) => [...rs, { ...emptyRow(), model_id: r.model_id, color: r.color, storage: r.storage, condition: r.condition, purchase_price: r.purchase_price, selling_price: r.selling_price }]);
+                            else bulkImeiRefs.current[i + 1]?.focus();
                           }
                         }}
                       />

@@ -3,7 +3,7 @@ import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery, PRODUCT_SELECT, shopsQuery, type ProductRow } from "@/lib/app";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ function StockCheck() {
   const [wrong, setWrong] = useState<Wrong[]>([]);
   const [last, setLast] = useState<{ ok: boolean; text: string } | null>(null);
   const ref = useRef<HTMLInputElement>(null);
+  useEffect(() => { setFound([]); setWrong([]); setLast(null); setCode(""); ref.current?.focus(); }, [shop]);
 
   const { data: all = [] } = useQuery({
     queryKey: ["stock-check-products"],
