@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          id: boolean
+          transit_limit_hours: number
+        }
+        Insert: {
+          id?: boolean
+          transit_limit_hours?: number
+        }
+        Update: {
+          id?: boolean
+          transit_limit_hours?: number
+        }
+        Relationships: []
+      }
       models: {
         Row: {
           brand: string
@@ -175,13 +190,83 @@ export type Database = {
           },
         ]
       }
+      receipts: {
+        Row: {
+          change_due: number
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          discount: number
+          id: string
+          items: Json
+          paid: number
+          payment: string
+          receipt_no: string
+          shop_id: string
+          shop_snapshot: Json
+          sold_by: string
+          staff_code: string
+          staff_name: string
+          subtotal: number
+          total: number
+        }
+        Insert: {
+          change_due?: number
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          discount?: number
+          id?: string
+          items: Json
+          paid: number
+          payment: string
+          receipt_no?: string
+          shop_id: string
+          shop_snapshot: Json
+          sold_by: string
+          staff_code: string
+          staff_name: string
+          subtotal: number
+          total: number
+        }
+        Update: {
+          change_due?: number
+          created_at?: string
+          customer_name?: string
+          customer_phone?: string
+          discount?: number
+          id?: string
+          items?: Json
+          paid?: number
+          payment?: string
+          receipt_no?: string
+          shop_id?: string
+          shop_snapshot?: Json
+          sold_by?: string
+          staff_code?: string
+          staff_name?: string
+          subtotal?: number
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "receipts_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sales: {
         Row: {
           created_at: string
           customer_name: string | null
           id: string
+          item_price: number | null
           payment: string
           product_id: string
+          receipt_id: string | null
           receipt_no: string
           sale_price: number
           shop_id: string
@@ -192,8 +277,10 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           id?: string
+          item_price?: number | null
           payment: string
           product_id: string
+          receipt_id?: string | null
           receipt_no?: string
           sale_price: number
           shop_id: string
@@ -204,8 +291,10 @@ export type Database = {
           created_at?: string
           customer_name?: string | null
           id?: string
+          item_price?: number | null
           payment?: string
           product_id?: string
+          receipt_id?: string | null
           receipt_no?: string
           sale_price?: number
           shop_id?: string
@@ -221,6 +310,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "sales_receipt_id_fkey"
+            columns: ["receipt_id"]
+            isOneToOne: false
+            referencedRelation: "receipts"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "sales_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
@@ -231,16 +327,34 @@ export type Database = {
       }
       shops: {
         Row: {
+          address: string
+          email: string
           id: string
+          logo: string | null
           name: string
+          phone: string
+          postal_code: string
+          receipt_footer: string
         }
         Insert: {
+          address?: string
+          email?: string
           id?: string
+          logo?: string | null
           name: string
+          phone?: string
+          postal_code?: string
+          receipt_footer?: string
         }
         Update: {
+          address?: string
+          email?: string
           id?: string
+          logo?: string | null
           name?: string
+          phone?: string
+          postal_code?: string
+          receipt_footer?: string
         }
         Relationships: []
       }
@@ -248,6 +362,9 @@ export type Database = {
         Row: {
           accepted_at: string | null
           accepted_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           from_shop_id: string
           id: string
@@ -262,6 +379,9 @@ export type Database = {
         Insert: {
           accepted_at?: string | null
           accepted_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           from_shop_id: string
           id?: string
@@ -276,6 +396,9 @@ export type Database = {
         Update: {
           accepted_at?: string | null
           accepted_by?: string | null
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          cancelled_by?: string | null
           created_at?: string
           from_shop_id?: string
           id?: string
@@ -404,11 +527,40 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      cancel_overdue_transfer: {
+        Args: { _reason: string; _transfer_id: string }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
+          created_at: string
+          from_shop_id: string
+          id: string
+          product_id: string
+          received_at: string | null
+          received_by: string | null
+          reject_reason: string | null
+          requested_by: string
+          status: string
+          to_shop_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "transfers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       cancel_transfer: {
         Args: { _transfer_id: string }
         Returns: {
           accepted_at: string | null
           accepted_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           from_shop_id: string
           id: string
@@ -428,6 +580,43 @@ export type Database = {
         }
       }
       check_staff_code: { Args: { _code: string }; Returns: string }
+      complete_cart_sale: {
+        Args: {
+          _customer_name: string
+          _customer_phone: string
+          _discount: number
+          _items: Json
+          _paid: number
+          _payment: string
+          _shop_id: string
+          _staff_code: string
+        }
+        Returns: {
+          change_due: number
+          created_at: string
+          customer_name: string
+          customer_phone: string
+          discount: number
+          id: string
+          items: Json
+          paid: number
+          payment: string
+          receipt_no: string
+          shop_id: string
+          shop_snapshot: Json
+          sold_by: string
+          staff_code: string
+          staff_name: string
+          subtotal: number
+          total: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "receipts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       complete_sale: {
         Args: {
           _customer_name: string
@@ -440,8 +629,10 @@ export type Database = {
           created_at: string
           customer_name: string | null
           id: string
+          item_price: number | null
           payment: string
           product_id: string
+          receipt_id: string | null
           receipt_no: string
           sale_price: number
           shop_id: string
@@ -455,6 +646,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      expire_transfer_requests: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -468,6 +660,9 @@ export type Database = {
         Returns: {
           accepted_at: string | null
           accepted_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           from_shop_id: string
           id: string
@@ -491,6 +686,9 @@ export type Database = {
         Returns: {
           accepted_at: string | null
           accepted_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           from_shop_id: string
           id: string
@@ -514,6 +712,9 @@ export type Database = {
         Returns: {
           accepted_at: string | null
           accepted_by: string | null
+          cancel_reason: string | null
+          cancelled_at: string | null
+          cancelled_by: string | null
           created_at: string
           from_shop_id: string
           id: string
@@ -532,6 +733,20 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      save_shop_profile: {
+        Args: {
+          _address: string
+          _email: string
+          _id: string
+          _logo: string
+          _name: string
+          _phone: string
+          _postal_code: string
+          _receipt_footer: string
+        }
+        Returns: undefined
+      }
+      save_transit_limit: { Args: { _hours: number }; Returns: undefined }
     }
     Enums: {
       app_role: "owner" | "staff"

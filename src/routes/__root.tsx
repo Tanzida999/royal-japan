@@ -12,6 +12,10 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { ShopProvider } from "@/lib/shop-context";
+import { ShopSelect } from "@/components/ShopSelect";
+import { useQuery } from "@tanstack/react-query";
+import { meQuery } from "@/lib/app";
 
 function NotFoundComponent() {
   return (
@@ -121,7 +125,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <ShopProvider><CurrentShopHeader /><Outlet /></ShopProvider>
     </QueryClientProvider>
   );
+}
+
+function CurrentShopHeader() {
+  const { data: me } = useQuery(meQuery);
+  if (!me) return null;
+  return <div className="no-print border-b bg-card"><div className="mx-auto flex max-w-5xl flex-wrap items-center gap-3 px-4 py-2"><ShopSelect /><span className="ml-auto text-sm">{me.name} · {me.role}</span>{me.role === "owner" && <Link to="/shops" className="text-sm font-medium text-primary">Shops</Link>}</div></div>;
 }

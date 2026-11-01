@@ -42,11 +42,11 @@ export const meQuery = queryOptions({
 export const shopsQuery = queryOptions({
   queryKey: ["shops"],
   queryFn: async () => {
-    const { data, error } = await supabase.from("shops").select("id, name").order("name");
+    const { data, error } = await supabase.from("shops").select("id, name, address, postal_code, phone, email, receipt_footer, logo").order("name");
     if (error) throw error;
     return data;
   },
-  staleTime: Infinity,
+  staleTime: 60_000,
 });
 
 export const modelsQuery = queryOptions({
