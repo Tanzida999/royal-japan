@@ -88,8 +88,41 @@ export type Database = {
           },
         ]
       }
+      product_photos: {
+        Row: {
+          created_at: string
+          id: string
+          product_id: string
+          uploaded_by: string
+          url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          product_id: string
+          uploaded_by: string
+          url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          product_id?: string
+          uploaded_by?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_photos_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
+          carrier: string | null
           color: string
           condition: string
           created_at: string
@@ -104,8 +137,10 @@ export type Database = {
           staff_code: string | null
           status: string
           storage: string
+          tracking_number: string | null
         }
         Insert: {
+          carrier?: string | null
           color: string
           condition: string
           created_at?: string
@@ -120,8 +155,10 @@ export type Database = {
           staff_code?: string | null
           status?: string
           storage: string
+          tracking_number?: string | null
         }
         Update: {
+          carrier?: string | null
           color?: string
           condition?: string
           created_at?: string
@@ -136,6 +173,7 @@ export type Database = {
           staff_code?: string | null
           status?: string
           storage?: string
+          tracking_number?: string | null
         }
         Relationships: [
           {
@@ -473,6 +511,7 @@ export type Database = {
           _supplier_payment: string
         }
         Returns: {
+          carrier: string | null
           color: string
           condition: string
           created_at: string
@@ -487,12 +526,29 @@ export type Database = {
           staff_code: string | null
           status: string
           storage: string
+          tracking_number: string | null
         }
         SetofOptions: {
           from: "*"
           to: "products"
           isOneToOne: true
           isSetofReturn: false
+        }
+      }
+      add_product_photos: {
+        Args: { _paths: string[]; _product_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          product_id: string
+          uploaded_by: string
+          url: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "product_photos"
+          isOneToOne: false
+          isSetofReturn: true
         }
       }
       add_products_bulk: {
@@ -505,6 +561,7 @@ export type Database = {
           _supplier_payment: string
         }
         Returns: {
+          carrier: string | null
           color: string
           condition: string
           created_at: string
@@ -519,6 +576,7 @@ export type Database = {
           staff_code: string | null
           status: string
           storage: string
+          tracking_number: string | null
         }[]
         SetofOptions: {
           from: "*"
@@ -527,6 +585,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      can_edit_product: { Args: { _product_id: string }; Returns: boolean }
       cancel_overdue_transfer: {
         Args: { _reason: string; _transfer_id: string }
         Returns: {
@@ -773,6 +832,37 @@ export type Database = {
         Returns: undefined
       }
       save_transit_limit: { Args: { _hours: number }; Returns: undefined }
+      set_product_tracking: {
+        Args: {
+          _carrier: string
+          _product_id: string
+          _tracking_number: string
+        }
+        Returns: {
+          carrier: string | null
+          color: string
+          condition: string
+          created_at: string
+          created_by: string
+          current_shop_id: string | null
+          id: string
+          imei: string
+          model_id: string
+          product_code: string
+          selling_price: number
+          shop_id: string
+          staff_code: string | null
+          status: string
+          storage: string
+          tracking_number: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       app_role: "owner" | "staff"

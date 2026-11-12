@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { jstDateTime, meQuery, shopsQuery } from "@/lib/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ProductPhotos } from "@/components/ProductPhotos";
 
 export const Route = createFileRoute("/_authenticated/transfers")({
   head: () => pageMeta("Transfers — Mobile Shop Manager", "Request, accept and receive phone transfers between shops."),
@@ -166,6 +167,7 @@ function Row({ t, phone, shopName, children, limit, now }: { limit: number; now:
           {t.reject_reason && ` · reason: ${t.reject_reason}`}
           {t.cancel_reason && ` · cancellation: ${t.cancel_reason} · ${jstDateTime(t.cancelled_at ?? t.created_at)}`}
         </div>
+        <div className="mt-1"><ProductPhotos productId={t.product_id} size="sm" /></div>
       </div>
       {t.status === "accepted" && t.accepted_at && <TimeRemaining start={t.accepted_at} limit={limit} now={now} />}
       {children}

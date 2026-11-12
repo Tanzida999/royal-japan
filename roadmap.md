@@ -10,4 +10,4 @@
 ## Verification limits
 - Physical cameras and printers require the user's hardware; print views and camera fallback are checked.
 - Real shop contact details and logos were not supplied and remain blank; no invented shop details.
-- Test records are retained under Checkout verification / Transfer verification; no existing phones were sold or deleted.
+- Test records are retained under Checkout verification / Transfer verification; no existing phones were sold or deleted.- [x] Add Product: staff code (scanner/camera/typing), condition photos, shipping tracking; shown on detail, stock, transfers, sell, dashboard

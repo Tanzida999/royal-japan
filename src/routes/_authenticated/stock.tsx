@@ -1,7 +1,7 @@
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ function Stock() {
   const { data: shops = [] } = useQuery(shopsQuery);
   const [search, setSearch] = useState("");
   const { shopId: shop } = useCurrentShop();
+  const [hasTracking, setHasTracking] = useState(false);
   const [label, setLabel] = useState<LabelData | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
@@ -51,6 +52,7 @@ function Stock() {
   const matches = rows.filter(
     (r) =>
       (!shop || r.current_shop_id === shop) &&
+      (!hasTracking || Boolean(r.tracking_number)) &&
       (!q ||
         [r.product_code, r.imei, r.models?.brand, r.models?.model, r.color, r.storage]
           .join(" ")
@@ -77,6 +79,7 @@ function Stock() {
       <div className="flex flex-wrap items-end gap-2">
         <h1 className="mr-auto text-2xl font-bold">Stock ({filtered.length})</h1>
         <Input className="w-full sm:w-64" placeholder="Search code, IMEI, model…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hasTracking} onChange={(e) => setHasTracking(e.target.checked)} />Has tracking</label>
         <ShopSelect />
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card">
@@ -104,7 +107,8 @@ function Stock() {
             {filtered.map((r) => (
               <tr key={r.id} className="border-t">
                 <td className="p-2 font-mono">
-                  {r.product_code}
+                  <Link to="/product/$id" params={{ id: r.id }} className="text-primary underline-offset-2 hover:underline">{r.product_code}</Link>
+                  {r.tracking_number && <span className="ml-1 rounded bg-accent px-1.5 py-0.5 font-sans text-xs font-semibold">Shipping</span>}
                   <div className="text-xs text-muted-foreground">{r.imei}</div>
                 </td>
                 <td className="p-2">{r.models?.brand} {r.models?.model}</td>
@@ -142,7 +146,7 @@ function Stock() {
             <tbody>
               {transit.map((r) => (
                 <tr key={r.id} className="border-t">
-                  <td className="p-2 font-mono">{r.product_code}<div className="text-xs text-muted-foreground">{r.imei}</div></td>
+                  <td className="p-2 font-mono"><Link to="/product/$id" params={{ id: r.id }} className="text-primary underline-offset-2 hover:underline">{r.product_code}</Link>{r.tracking_number && <span className="ml-1 rounded bg-accent px-1.5 py-0.5 font-sans text-xs font-semibold">Shipping</span>}<div className="text-xs text-muted-foreground">{r.imei}</div></td>
                   <td className="p-2">{r.models?.brand} {r.models?.model}</td>
                   <td className="p-2">{r.storage}</td>
                   <td className="p-2">{r.color}</td>

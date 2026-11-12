@@ -23,3 +23,5 @@
 - Shop logos use private storage and signed read URLs because workspace policy blocks public buckets.
 - Transfer request expiry uses a managed hourly authenticated callback and deadline guards; overdue cancellation is owner-only and logged.
 - Browser camera decoding is dynamically imported inside an effect and stops media tracks on exit.
+- Product condition photos live in the private product-photos bucket under <product_id>/ and are recorded only via add_product_photos (no update/delete); browser compresses before upload, and photo-count rules live in src/lib/product-extras.ts.
+- Shipping carrier/tracking on products changes only via set_product_tracking; carrier tracking URLs are built in src/lib/product-extras.ts.

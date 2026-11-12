@@ -49,3 +49,25 @@ describe("alerts", () => {
     expect(buildAlerts({ ...input, transitLimit: 12 }).map(a => a.kind)).toEqual(["Transfer overdue"]);
   });
 });
+
+import { photoProblem, trackingUrl } from "@/lib/product-extras";
+describe("condition photos", () => {
+  it("Used B and Used C need at least 2 photos", () => {
+    expect(photoProblem("Used B", 1)).not.toBe("");
+    expect(photoProblem("Used C", 1)).not.toBe("");
+    expect(photoProblem("Used C", 2)).toBe("");
+  });
+  it("other conditions need 1 to 6 photos", () => {
+    expect(photoProblem("New", 0)).not.toBe("");
+    expect(photoProblem("Used A", 1)).toBe("");
+    expect(photoProblem("New", 7)).not.toBe("");
+  });
+});
+describe("tracking links", () => {
+  it("fills the number into each carrier's page", () => {
+    expect(trackingUrl("Japan Post", "1234 5678")).toContain("requestNo1=12345678");
+    expect(trackingUrl("Yamato", "123456")).toContain("kuronekoyamato.co.jp");
+    expect(trackingUrl("Sagawa", "123456")).toContain("okurijoNo=123456");
+    expect(trackingUrl("Other", "123456")).toBeNull();
+  });
+});

@@ -14,6 +14,10 @@ import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
 import { StaffScan } from "@/components/StaffScan";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
+import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
+import { TrackingFields } from "@/components/TrackingEditor";
+import { photoProblem } from "@/lib/product-extras";
+import { uploadProductPhotos } from "@/lib/product-photos";
 
 export const Route = createFileRoute("/_authenticated/add")({
   head: () => pageMeta("Add Product — Mobile Shop Manager", "Register individual phones or bulk purchases with verified staff badges."),
@@ -71,9 +75,15 @@ function AddProduct() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState<LabelData[] | null>(null);
+  const [photos, setPhotos] = useState<PickedPhoto[]>([]);
+  const [rowPhotos, setRowPhotos] = useState<PickedPhoto[][]>([[]]);
+  const [carrier, setCarrier] = useState("");
+  const [tracking, setTracking] = useState("");
+  const [postError, setPostError] = useState("");
 
-  useEffect(() => { if (!bulk && !saved) imeiRef.current?.focus(); }, [bulk, saved]);
-  useEffect(() => { if (bulk && !saved) bulkImeiRefs.current[rows.length - 1]?.focus(); }, [bulk, rows.length, saved]);
+  const focusImei = () => setTimeout(() => (bulk ? bulkImeiRefs.current[rows.length - 1] : imeiRef.current)?.focus(), 0);
+  useEffect(() => { if (!bulk && !saved && staffCode) imeiRef.current?.focus(); }, [bulk, saved]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (bulk && !saved && staffCode) bulkImeiRefs.current[rows.length - 1]?.focus(); }, [bulk, rows.length, saved]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const brands = useMemo(() => [...new Set(models.map((m) => m.brand))], [models]);
   const brandModels = models.filter((m) => m.brand === brand);
@@ -90,7 +100,25 @@ function AddProduct() {
   });
   const existing = new Set(existingImeis);
   const imeiError = imei ? imeiProblem(imei, existing) : "";
-  const rowStatus = validateBulkRows(rows, existing);
+  const rowStatus = validateBulkRows(rows, existing).map((st, i) => st !== "OK" ? st : photoProblem(rows[i]!.condition, rowPhotos[i]?.length ?? 0) || "OK");
+  const photoError = photoProblem(condition, photos.length);
+
+  function trackingOk() {
+    if (tracking.trim() && !carrier) return "Pick a carrier for the tracking number";
+    if (tracking.trim() && !/^[A-Za-z0-9-]{4,40}$/.test(tracking.replace(/\s/g, ""))) return "Tracking number looks wrong";
+    return "";
+  }
+
+  /** Photos + tracking after the product exists; returns problems (product is already saved). */
+  async function afterSave(productId: string, blobs: Blob[]) {
+    const problems: string[] = [];
+    try { await uploadProductPhotos(productId, blobs); } catch (e) { problems.push(e instanceof Error ? e.message : "Photos not saved"); }
+    if (tracking.trim()) {
+      const { error } = await supabase.rpc("set_product_tracking", { _product_id: productId, _carrier: carrier, _tracking_number: tracking });
+      if (error) problems.push(`Tracking not saved: ${error.message}`);
+    }
+    return problems;
+  }
 
   const modelName = (id: string) => {
     const m = models.find((x) => x.id === id);
@@ -107,6 +135,9 @@ function AddProduct() {
     setError("");
     if (!staffCode) return setError("Scan your staff code first");
     if (imeiError) return setError(imeiError);
+    if (photoError) return setError(photoError);
+    const te = trackingOk();
+    if (te) return setError(te);
     const pe = paymentOk();
     if (pe) return setError(pe);
     const parsed = schema.safeParse({
@@ -137,10 +168,17 @@ function AddProduct() {
       _supplier_payment: supPay,
       _paid_amount: supPay === "Partial" ? Number(paid) : (null as unknown as number),
     });
-    setBusy(false);
     if (error) {
+      setBusy(false);
       return setError(error.message.includes("duplicate") ? "This IMEI or product code already exists" : error.message);
     }
+    const problems = await afterSave(data.id, photos.map((x) => x.blob));
+    setBusy(false);
+    setPostError(problems.length ? `Phone saved, but: ${problems.join("; ")}. Add them from the phone's details page.` : "");
+    photos.forEach((x) => URL.revokeObjectURL(x.url));
+    setPhotos([]);
+    setTracking("");
+    setCarrier("");
     setSaved([
       { product_code: data.product_code, model: modelName(v.model_id), storage: v.storage, selling_price: v.selling_price, imei: data.imei, color: data.color, condition: data.condition, purchase_date: jstDate(data.created_at), shop: shops.find(s => s.id === data.shop_id)?.name ?? "" },
     ]);
@@ -157,7 +195,7 @@ function AddProduct() {
     setError("");
     if (!shopId) return setError("Pick a shop");
     if (!staffCode) return setError("Scan your staff code first");
-    const pe = paymentOk();
+    const pe = paymentOk() || trackingOk();
     if (pe) return setError(pe);
     if (rows.length === 0) return setError("Add at least one phone");
     if (rowStatus.some((s) => s !== "OK")) return setError("Fix every row first — all rows must be OK");
@@ -176,8 +214,18 @@ function AddProduct() {
       _paid_amount: supPay === "Partial" ? Number(paid) : (null as unknown as number),
       _items: items,
     });
+    if (error) { setBusy(false); return setError(`Nothing was saved: ${error.message}`); }
+    const problems: string[] = [];
+    for (const [i, p] of (data ?? []).entries()) {
+      const idx = rows.findIndex((r) => r.imei.trim() === p.imei);
+      problems.push(...(await afterSave(p.id, (rowPhotos[idx >= 0 ? idx : i] ?? []).map((x) => x.blob))).map((m) => `${p.product_code}: ${m}`));
+    }
     setBusy(false);
-    if (error) return setError(`Nothing was saved: ${error.message}`);
+    setPostError(problems.length ? `Phones saved, but: ${problems.join("; ")}. Add them from each phone's details page.` : "");
+    rowPhotos.flat().forEach((x) => URL.revokeObjectURL(x.url));
+    setRowPhotos([[]]);
+    setTracking("");
+    setCarrier("");
     setSaved(
       (data ?? []).map((p) => ({
         product_code: p.product_code,
@@ -205,6 +253,7 @@ function AddProduct() {
               Product code: <span className="font-mono font-semibold text-foreground">{saved[0]?.product_code}</span>
             </p>
           )}
+          {postError && <p role="alert" className="font-semibold text-destructive">{postError}</p>}
         </div>
         {saved.length === 1 && saved[0] ? (
           <PrintLabel data={saved[0]} />
@@ -219,7 +268,7 @@ function AddProduct() {
         )}
         <div className="no-print flex gap-2">
           <Button onClick={() => window.print()}>{saved.length > 1 ? "Print all labels" : "Print Label"}</Button>
-          <Button variant="outline" onClick={() => setSaved(null)}>
+          <Button variant="outline" onClick={() => { setSaved(null); setPostError(""); }}>
             Add another
           </Button>
         </div>
@@ -250,7 +299,9 @@ function AddProduct() {
           <Input inputMode="numeric" value={paid} onChange={(e) => setPaid(e.target.value.replace(/\D/g, ""))} />
         </Field>
       )}
-      <StaffScan value={staffCode} onChange={(c) => setStaffCode(c)} />
+      <Field label="Shipping (optional)">
+        <TrackingFields carrier={carrier} number={tracking} onCarrier={setCarrier} onNumber={setTracking} />
+      </Field>
     </>
   );
 
@@ -263,6 +314,7 @@ function AddProduct() {
           Bulk mode
         </label>
       </div>
+      <StaffScan value={staffCode} onChange={(c) => setStaffCode(c)} autoFocus camera errorText="Unknown staff code" onVerified={focusImei} />
 
       {!bulk ? (
         <form onSubmit={submit} className="space-y-4">
@@ -272,7 +324,6 @@ function AddProduct() {
               <Input
                 ref={imeiRef}
                 aria-label="IMEI"
-                autoFocus
                 inputMode="numeric"
                 maxLength={15}
                 value={imei}
@@ -325,8 +376,12 @@ function AddProduct() {
               <Input inputMode="numeric" value={selling} onChange={(e) => setSelling(e.target.value.replace(/\D/g, ""))} />
             </Field>
           </div>
+          <Field label={`Condition photos (1–6${condition === "Used B" || condition === "Used C" ? ", at least 2 for " + condition : ""})`}>
+            <PhotoPicker photos={photos} onChange={setPhotos} />
+            {photoError && <p className="text-xs text-destructive">{photoError}</p>}
+          </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={busy || Boolean(imeiError)} className="w-full sm:w-auto">
+          <Button type="submit" disabled={busy || !staffCode || Boolean(imeiError)} className="w-full sm:w-auto">
             {busy ? "Saving…" : "Save Product"}
           </Button>
         </form>
@@ -345,6 +400,7 @@ function AddProduct() {
                   <th className="p-2">Cond.</th>
                   <th className="p-2">Purchase ¥</th>
                   <th className="p-2">Selling ¥</th>
+                  <th className="p-2">Photos</th>
                   <th className="p-2">Status</th>
                 </tr>
               </thead>
@@ -385,6 +441,7 @@ function AddProduct() {
                     </td>
                     <td className="p-1"><Input className="min-w-24" inputMode="numeric" value={r.purchase_price} onChange={(e) => setRow(i, { purchase_price: e.target.value.replace(/\D/g, "") })} /></td>
                     <td className="p-1"><Input className="min-w-24" inputMode="numeric" value={r.selling_price} onChange={(e) => setRow(i, { selling_price: e.target.value.replace(/\D/g, "") })} /></td>
+                    <td className="p-1"><div className="min-w-32"><PhotoPicker compact photos={rowPhotos[i] ?? []} onChange={(ps) => setRowPhotos((all) => { const next = [...all]; next[i] = ps; return next; })} /></div></td>
                     <td className={`p-2 font-semibold whitespace-nowrap ${rowStatus[i] === "OK" ? "text-primary" : "text-destructive"}`}>
                       {rowStatus[i]}
                     </td>
@@ -397,8 +454,8 @@ function AddProduct() {
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRows((rs) => [...rs, emptyRow()])}>Add row</Button>
-            <Button variant="outline" disabled={rows.length <= 1} onClick={() => setRows((rs) => rs.slice(0, -1))}>Remove last row</Button>
-            <Button onClick={saveAll} disabled={busy}>{busy ? "Saving…" : `Save all (${rows.length})`}</Button>
+            <Button variant="outline" disabled={rows.length <= 1} onClick={() => { setRows((rs) => rs.slice(0, -1)); setRowPhotos((all) => { all[rows.length - 1]?.forEach((x) => URL.revokeObjectURL(x.url)); return all.slice(0, rows.length - 1); }); }}>Remove last row</Button>
+            <Button onClick={saveAll} disabled={busy || !staffCode}>{busy ? "Saving…" : `Save all (${rows.length})`}</Button>
           </div>
         </div>
       )}

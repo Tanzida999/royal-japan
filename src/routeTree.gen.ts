@@ -23,6 +23,7 @@ import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedStockCheckRouteImport } from './routes/_authenticated/stock-check'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
+import { Route as AuthenticatedProductIdRouteImport } from './routes/_authenticated/product.$id'
 import { Route as ApiPublicJobsExpireTransfersRouteImport } from './routes/api/public/jobs/expire-transfers'
 
 const IndexRoute = IndexRouteImport.update({
@@ -94,6 +95,11 @@ const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
   path: '/transfers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedProductIdRoute = AuthenticatedProductIdRouteImport.update({
+  id: '/product/$id',
+  path: '/product/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiPublicJobsExpireTransfersRoute =
   ApiPublicJobsExpireTransfersRouteImport.update({
     id: '/api/public/jobs/expire-transfers',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/stock-check': typeof AuthenticatedStockCheckRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/product/$id': typeof AuthenticatedProductIdRoute
   '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
 }
 export interface FileRoutesByTo {
@@ -131,6 +138,7 @@ export interface FileRoutesByTo {
   '/stock-check': typeof AuthenticatedStockCheckRoute
   '/suppliers': typeof AuthenticatedSuppliersRoute
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/product/$id': typeof AuthenticatedProductIdRoute
   '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
 }
 export interface FileRoutesById {
@@ -149,6 +157,7 @@ export interface FileRoutesById {
   '/_authenticated/stock-check': typeof AuthenticatedStockCheckRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRoute
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
+  '/_authenticated/product/$id': typeof AuthenticatedProductIdRoute
   '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
 }
 export interface FileRouteTypes {
@@ -167,6 +176,7 @@ export interface FileRouteTypes {
     | '/stock-check'
     | '/suppliers'
     | '/transfers'
+    | '/product/$id'
     | '/api/public/jobs/expire-transfers'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -183,6 +193,7 @@ export interface FileRouteTypes {
     | '/stock-check'
     | '/suppliers'
     | '/transfers'
+    | '/product/$id'
     | '/api/public/jobs/expire-transfers'
   id:
     | '__root__'
@@ -200,6 +211,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stock-check'
     | '/_authenticated/suppliers'
     | '/_authenticated/transfers'
+    | '/_authenticated/product/$id'
     | '/api/public/jobs/expire-transfers'
   fileRoutesById: FileRoutesById
 }
@@ -310,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTransfersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/product/$id': {
+      id: '/_authenticated/product/$id'
+      path: '/product/$id'
+      fullPath: '/product/$id'
+      preLoaderRoute: typeof AuthenticatedProductIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/jobs/expire-transfers': {
       id: '/api/public/jobs/expire-transfers'
       path: '/api/public/jobs/expire-transfers'
@@ -332,6 +351,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStockCheckRoute: typeof AuthenticatedStockCheckRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRoute
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
+  AuthenticatedProductIdRoute: typeof AuthenticatedProductIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -346,6 +366,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStockCheckRoute: AuthenticatedStockCheckRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRoute,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
+  AuthenticatedProductIdRoute: AuthenticatedProductIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =

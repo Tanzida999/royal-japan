@@ -1,7 +1,8 @@
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
-import { createFileRoute, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { TrackButton } from "@/components/TrackingEditor";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -34,7 +35,7 @@ function Dashboard() {
     queryFn: async () => {
       const [sales, products, costs, transfers] = await Promise.all([
         supabase.from("sales").select("receipt_no, product_id, sale_price, shop_id, created_at"),
-        supabase.from("products").select("id, product_code, shop_id, current_shop_id, status, created_at, storage, models(brand, model)"),
+        supabase.from("products").select("id, product_code, shop_id, current_shop_id, status, created_at, storage, carrier, tracking_number, models(brand, model)"),
         supabase.from("product_costs").select("product_id, purchase_price"),
         supabase.from("transfers").select("product_id, from_shop_id, to_shop_id, status, accepted_at, reject_reason"),
       ]);
@@ -127,6 +128,28 @@ function Dashboard() {
         <Card title={`Profit ${periodLabel}`} value={yen(totals.period.profit)} />
         <Card title="Stock value (cost)" value={yen(stockValue)} />
       </div>
+
+      {(() => {
+        const shipping = data.products.filter((p) => p.tracking_number && p.status !== "in_stock" && (inShop(p.current_shop_id ?? p.shop_id) || inShop(p.shop_id)));
+        return (
+          <div className="rounded-xl border bg-card">
+            <div className="border-b p-3 font-semibold">Shipping — not yet in stock ({shipping.length})</div>
+            {shipping.length === 0 ? <p className="p-3 text-sm text-muted-foreground">No phones being shipped.</p> : (
+              <ul className="divide-y text-sm">
+                {shipping.map((p) => (
+                  <li key={p.id} className="flex flex-wrap items-center gap-2 p-3">
+                    <Link to="/product/$id" params={{ id: p.id }} className="font-mono text-primary">{p.product_code}</Link>
+                    <span>{p.models?.brand} {p.models?.model} {p.storage}</span>
+                    <span className="rounded bg-muted px-2 py-0.5 text-xs font-semibold">{p.status}</span>
+                    <span className="mr-auto text-muted-foreground">{p.carrier} {p.tracking_number}</span>
+                    <TrackButton carrier={p.carrier} number={p.tracking_number} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        );
+      })()}
 
       <div className="rounded-xl border bg-card">
         <div className="border-b p-3 font-semibold">Alerts ({alerts.length})</div>

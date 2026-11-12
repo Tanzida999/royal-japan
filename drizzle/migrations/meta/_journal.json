@@ -43,6 +43,13 @@
       "when": 1793547418774,
       "tag": "0005_enforce_staff_shop_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794475345714,
+      "tag": "0006_product_photos_tracking",
+      "breakpoints": true
     }
   ]
 }

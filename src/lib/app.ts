@@ -64,7 +64,7 @@ export const modelsQuery = queryOptions({
 });
 
 export const PRODUCT_SELECT =
-  "id, product_code, imei, color, storage, condition, selling_price, status, shop_id, current_shop_id, created_at, models(brand, model), shops:shops!products_current_shop_id_fkey(name)";
+  "id, product_code, imei, color, storage, condition, selling_price, status, shop_id, current_shop_id, created_at, carrier, tracking_number, models(brand, model), shops:shops!products_current_shop_id_fkey(name)";
 
 export type ProductRow = {
   id: string;
@@ -78,6 +78,8 @@ export type ProductRow = {
   shop_id: string;
   current_shop_id: string;
   created_at: string;
+  carrier: string | null;
+  tracking_number: string | null;
   models: { brand: string; model: string } | null;
   shops: { name: string } | null;
 };
