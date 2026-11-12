@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/audit";
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
@@ -67,7 +68,7 @@ function Stock() {
       <div className="space-y-4">
         <PrintLabel data={label} />
         <div className="no-print flex gap-2">
-          <Button onClick={() => window.print()}>Print Label</Button>
+          <Button onClick={() => { window.print(); logEvent("label_printed", "products", label.product_code, { product_code: label.product_code, imei: label.imei }); }}>Print Label</Button>
           <Button variant="outline" onClick={() => setLabel(null)}>Back to stock</Button>
         </div>
       </div>

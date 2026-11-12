@@ -25,3 +25,5 @@
 - Browser camera decoding is dynamically imported inside an effect and stops media tracks on exit.
 - Product condition photos live in the private product-photos bucket under <product_id>/ and are recorded only via add_product_photos (no update/delete); browser compresses before upload, and photo-count rules live in src/lib/product-extras.ts.
 - Shipping carrier/tracking on products changes only via set_product_tracking; carrier tracking URLs are built in src/lib/product-extras.ts.
+- Account management (invite, resend, reset, role/shop change, disable) runs in owner-checked server functions in src/lib/staff.functions.ts using the admin client; disabling both bans the auth user and sets profiles.disabled, which has_role honours so access stops immediately.
+- audit_log is written only by SECURITY DEFINER triggers/RPCs (audit_row, log_event, log_admin_event), is owner-read-only and blocked from update/delete/truncate by trigger; security alert rules live in src/lib/accounts.ts.

@@ -71,3 +71,26 @@ describe("tracking links", () => {
     expect(trackingUrl("Other", "123456")).toBeNull();
   });
 });
+
+import { failedLoginAlerts, priceEdits } from "@/lib/accounts";
+
+describe("account security alerts", () => {
+  const f = (email: string, t: string) => ({ action: "failed_login", table_name: "auth", record_id: null, created_at: t, old_values: null, new_values: { email } });
+  it("flags 3 failed logins for one account within 1 hour", () => {
+    const r = failedLoginAlerts([f("a@x.jp", "2026-11-12T10:00:00Z"), f("a@x.jp", "2026-11-12T10:20:00Z"), f("a@x.jp", "2026-11-12T10:59:00Z")]);
+    expect(r).toEqual([expect.objectContaining({ email: "a@x.jp", count: 3 })]);
+  });
+  it("does not flag 3 failed logins spread over more than 1 hour", () => {
+    expect(failedLoginAlerts([f("a@x.jp", "2026-11-12T10:00:00Z"), f("a@x.jp", "2026-11-12T10:40:00Z"), f("a@x.jp", "2026-11-12T11:20:00Z")])).toEqual([]);
+  });
+  it("does not combine attempts on different accounts", () => {
+    expect(failedLoginAlerts([f("a@x.jp", "2026-11-12T10:00:00Z"), f("b@x.jp", "2026-11-12T10:01:00Z"), f("a@x.jp", "2026-11-12T10:02:00Z")])).toEqual([]);
+  });
+  it("flags a selling price edit after a product was added", () => {
+    const r = priceEdits([{ action: "update", table_name: "products", record_id: "p1", created_at: "2026-11-12T10:00:00Z", old_values: { selling_price: 50000 }, new_values: { selling_price: 45000 } }]);
+    expect(r).toEqual([expect.objectContaining({ record_id: "p1", from: 50000, to: 45000 })]);
+  });
+  it("ignores product updates that do not change the price", () => {
+    expect(priceEdits([{ action: "update", table_name: "products", record_id: "p1", created_at: "2026-11-12T10:00:00Z", old_values: { selling_price: 50000, status: "in_stock" }, new_values: { selling_price: 50000, status: "sold" } }])).toEqual([]);
+  });
+});

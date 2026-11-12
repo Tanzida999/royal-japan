@@ -6,6 +6,7 @@ import { jstDate, meQuery, PRODUCT_SELECT, yen, type ProductRow } from "@/lib/ap
 import { pageMeta } from "@/lib/metadata";
 import { MAX_PHOTOS } from "@/lib/product-extras";
 import { uploadProductPhotos } from "@/lib/product-photos";
+import { ProductHistory } from "@/components/ProductHistory";
 import { ProductPhotos } from "@/components/ProductPhotos";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { TrackButton, TrackingEditor } from "@/components/TrackingEditor";
@@ -76,6 +77,12 @@ function ProductDetail() {
         <h2 className="font-semibold">Shipping tracking</h2>
         {canEdit ? <TrackingEditor key={`${p.carrier}-${p.tracking_number}`} productId={id} carrier={p.carrier} number={p.tracking_number} /> : <div className="flex items-center gap-2 text-sm">{p.carrier ? `${p.carrier} ${p.tracking_number}` : "No tracking"}<TrackButton carrier={p.carrier} number={p.tracking_number} /></div>}
       </div>
+      {me?.role === "owner" && (
+        <div className="space-y-3 rounded-xl border bg-card p-4 sm:p-6">
+          <h2 className="font-semibold">History</h2>
+          <ProductHistory productId={id} productCode={p.product_code} />
+        </div>
+      )}
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { jstDate, jstDateTime, meQuery, shopsQuery, yen } from "@/lib/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { receiptView } from "@/lib/receipt";
+import { logEvent } from "@/lib/audit";
 import { ReceiptActions } from "@/components/ReceiptActions";
 import { Receipt, type ReceiptData } from "@/components/Receipt";
 
@@ -105,7 +106,7 @@ function Sales() {
     return (
       <div className="space-y-4">
         <Receipt receipt={receipt} format={format} />
-        <ReceiptActions format={format} onFormat={setFormat} backLabel="Back to sales" onBack={() => setReceipt(null)} />
+        <ReceiptActions format={format} onFormat={setFormat} backLabel="Back to sales" onBack={() => setReceipt(null)} onPrint={() => logEvent("receipt_reprinted", "receipts", receipt.receipt_no, { receipt_no: receipt.receipt_no })} />
       </div>
     );
   }

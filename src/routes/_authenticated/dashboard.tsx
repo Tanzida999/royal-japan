@@ -1,3 +1,4 @@
+import { SecurityAlerts } from "@/components/SecurityAlerts";
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
@@ -172,6 +173,8 @@ function Dashboard() {
           </ul>
         )}
       </div>
+
+      <SecurityAlerts />
 
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">

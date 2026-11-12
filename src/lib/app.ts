@@ -16,6 +16,8 @@ export type Me = {
   name: string;
   shop_id: string | null;
   role: "owner" | "staff" | null;
+  manager: boolean;
+  disabled: boolean;
 };
 
 export const meQuery = queryOptions({
@@ -24,7 +26,7 @@ export const meQuery = queryOptions({
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return null;
     const [{ data: p }, { data: r }] = await Promise.all([
-      supabase.from("profiles").select("name, shop_id").eq("id", u.user.id).maybeSingle(),
+      supabase.from("profiles").select("name, shop_id, disabled").eq("id", u.user.id).maybeSingle(),
       supabase.from("user_roles").select("role").eq("user_id", u.user.id),
     ]);
     const roles = (r ?? []).map((x) => x.role);
@@ -34,6 +36,8 @@ export const meQuery = queryOptions({
       name: p?.name ?? u.user.email ?? "",
       shop_id: p?.shop_id ?? null,
       role: roles.includes("owner") ? "owner" : roles.includes("staff") ? "staff" : null,
+      manager: roles.includes("manager"),
+      disabled: p?.disabled ?? false,
     };
   },
   staleTime: 60_000,

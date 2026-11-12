@@ -2,6 +2,8 @@ import { createFileRoute, Link, Outlet, redirect, useNavigate } from "@tanstack/
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { meQuery } from "@/lib/app";
+import { logEvent, shouldEndSession } from "@/lib/audit";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -9,6 +11,10 @@ export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
     const { data } = await supabase.auth.getUser();
     if (!data.user) throw redirect({ to: "/auth" });
+    if (shouldEndSession()) {
+      await supabase.auth.signOut();
+      throw redirect({ to: "/auth" });
+    }
   },
   component: Layout,
 });
@@ -18,7 +24,18 @@ function Layout() {
   const qc = useQueryClient();
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (!me?.disabled) return;
+    (async () => {
+      await qc.cancelQueries();
+      qc.clear();
+      await supabase.auth.signOut();
+      navigate({ to: "/auth", replace: true });
+    })();
+  }, [me?.disabled, qc, navigate]);
+
   async function signOut() {
+    await logEvent("logout", "auth", me?.id ?? "");
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
@@ -38,6 +55,7 @@ function Layout() {
           { to: "/stock-check", label: "Stock Check" },
           { to: "/suppliers", label: "Suppliers" },
           { to: "/staff", label: "Staff" },
+          { to: "/activity", label: "Activity" },
         ]
       : []),
   ] as const;
@@ -60,11 +78,11 @@ function Layout() {
             ))}
           </nav>
           <div className="ml-auto flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">
-              {me?.name} {me?.role ? `(${me.role})` : ""}
-            </span>
+            <Link to="/account" className="text-muted-foreground hover:underline">
+              {me?.name} {me?.role ? `(${me.manager ? "manager" : me.role})` : ""}
+            </Link>
             <Button size="sm" variant="outline" onClick={signOut}>
-              Sign out
+              Logout
             </Button>
           </div>
         </div>

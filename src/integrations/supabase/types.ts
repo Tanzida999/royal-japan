@@ -29,6 +29,51 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          device: string | null
+          id: string
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string | null
+          shop_id: string | null
+          staff_code: string | null
+          table_name: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          device?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          shop_id?: string | null
+          staff_code?: string | null
+          table_name?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          device?: string | null
+          id?: string
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string | null
+          shop_id?: string | null
+          staff_code?: string | null
+          table_name?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       models: {
         Row: {
           brand: string
@@ -201,18 +246,24 @@ export type Database = {
       }
       profiles: {
         Row: {
+          disabled: boolean
+          email: string | null
           id: string
           name: string
           shop_id: string | null
           staff_code: string
         }
         Insert: {
+          disabled?: boolean
+          email?: string | null
           id: string
           name: string
           shop_id?: string | null
           staff_code?: string
         }
         Update: {
+          disabled?: boolean
+          email?: string | null
           id?: string
           name?: string
           shop_id?: string | null
@@ -684,6 +735,26 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_admin_event: {
+        Args: {
+          _action: string
+          _actor: string
+          _details: Json
+          _device: string
+          _email: string
+          _record_id: string
+        }
+        Returns: undefined
+      }
+      log_event: {
+        Args: {
+          _action: string
+          _details: Json
+          _record_id: string
+          _table: string
+        }
+        Returns: undefined
+      }
       my_shop_id: { Args: never; Returns: string }
       receive_transfer: {
         Args: { _code: string; _transfer_id: string }
@@ -711,6 +782,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      request_device: { Args: never; Returns: string }
       request_transfer_to_shop: {
         Args: { _product_id: string; _to_shop_id: string }
         Returns: {
@@ -810,7 +882,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "owner" | "staff"
+      app_role: "owner" | "staff" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -938,7 +1010,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "staff"],
+      app_role: ["owner", "staff", "manager"],
     },
   },
 } as const

@@ -1,3 +1,4 @@
+import { logEvent } from "@/lib/audit";
 import { pageMeta } from "@/lib/metadata";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -267,7 +268,7 @@ function AddProduct() {
           </div>
         )}
         <div className="no-print flex gap-2">
-          <Button onClick={() => window.print()}>{saved.length > 1 ? "Print all labels" : "Print Label"}</Button>
+          <Button onClick={() => { window.print(); for (const l of saved) logEvent("label_printed", "products", l.product_code, { product_code: l.product_code, imei: l.imei }); }}>{saved.length > 1 ? "Print all labels" : "Print Label"}</Button>
           <Button variant="outline" onClick={() => { setSaved(null); setPostError(""); }}>
             Add another
           </Button>
