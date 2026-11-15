@@ -3,7 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 export type Supplier = Database['public']['Tables']['suppliers']['Row'];
 export type SupplierPurchase = Database['public']['Functions']['supplier_purchases']['Returns'][number];
-export const canManageSuppliers = (me: { role: string | null; manager: boolean } | null | undefined) => me?.role === 'owner' || me?.manager === true;
+export const canManageSuppliers = (me: { role: string | null; manager: boolean; disabled?: boolean } | null | undefined) => !me?.disabled && (me?.role === 'owner' || me?.role === 'staff' || me?.role === 'manager' || me?.manager === true);
+export const canReadSupplierFinance = (me: { role: string | null; manager: boolean; disabled?: boolean } | null | undefined) => !me?.disabled && (me?.role === 'owner' || me?.role === 'manager' || me?.manager === true);
+export function supplierDeleteResult(data: unknown): { deleted: boolean; linkedCount: number } {
+ if (!data || typeof data !== 'object' || !('deleted' in data) || !('linked_count' in data) || typeof data.deleted !== 'boolean' || typeof data.linked_count !== 'number' || !Number.isInteger(data.linked_count) || data.linked_count < 0 || (data.deleted && data.linked_count !== 0)) throw new Error('Could not confirm supplier deletion');
+ return { deleted: data.deleted, linkedCount: data.linked_count };
+}
 export const supplierProblem = (id: string, active: { id: string }[]) => active.some(s => s.id === id) ? '' : 'Pick an active supplier';
 export const supplierSearch = (s: { name: string; phone: string }, q: string) => [s.name, s.phone].some(v => v.toLowerCase().includes(q.trim().toLowerCase()));
 export const activeSuppliersQuery = queryOptions({ queryKey: ['active-suppliers'], queryFn: async () => { const { data, error } = await supabase.rpc('active_suppliers'); if (error) throw error; return data; } });

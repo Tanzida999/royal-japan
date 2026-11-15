@@ -1399,6 +1399,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_supplier: { Args: { _id: string }; Returns: Json }
       expire_held_sales: { Args: never; Returns: number }
       expire_transfer_requests: { Args: never; Returns: number }
       has_role: {
@@ -1595,6 +1596,7 @@ export type Database = {
         }
       }
       shared_pos_receipt: { Args: { _token: string }; Returns: Json }
+      supplier_link_count: { Args: { _id: string }; Returns: number }
       supplier_purchases: {
         Args: never
         Returns: {

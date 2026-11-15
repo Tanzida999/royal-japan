@@ -58,7 +58,7 @@ function Layout() {
     ...(me?.role === "owner" || me?.manager ? [{ to: "/pos-settings", label: "Settings" }] : []),
     { to: "/find", label: "Find in other shops" },
     { to: "/transfers", label: "Transfers" },
-    ...(me?.role === "owner" || me?.manager ? [{ to: "/suppliers", label: "Suppliers" }] : []),
+    { to: "/suppliers", label: "Suppliers" },
     ...(me?.role === "owner"
       ? [
           { to: "/dashboard", label: "Dashboard" },

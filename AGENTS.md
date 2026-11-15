@@ -28,8 +28,8 @@
 - Account management (invite, resend, reset, role/shop change, disable) runs in owner-checked server functions in src/lib/staff.functions.ts using the admin client; disabling both bans the auth user and sets profiles.disabled, which has_role honours so access stops immediately.
 - audit_log is written only by SECURITY DEFINER triggers/RPCs (audit_row, log_event, log_admin_event), is owner-read-only and blocked from update/delete/truncate by trigger; security alert rules live in src/lib/accounts.ts.
 
-- Supplier IDs on products are authoritative; retain legacy cost names as historical snapshots, link through a validated trigger, and expose only active IDs/names to staff so saved contact details and costs remain private.
-- Supplier directory writes use owner/manager-checked RPCs with audit triggers; manager purchase/dues reads use a shop-scoped RPC without widening owner-only cost table access.
+- Supplier IDs on products are authoritative; retain legacy cost names as historical snapshots and link through a validated trigger so renaming contacts never changes historical purchases.
+- Supplier directory writes use active-role-checked RPCs and actor audit triggers; guarded deletion locks the supplier and checks product/purchase links, while finance reads stay owner/manager-only to preserve staff cost privacy.
 - New Sale and Sales History share paginated, user/shop-keyed sales queries and JST receipt totals; database policies independently enforce assigned-shop reads.
 - POS checkout uses complete_pos_sale for atomic mixed-item inventory, discount/price authorization, payment validation and idempotent receipts; legacy cart checkout delegates to it so alternate callers cannot bypass register rules.
 - Active register state clears on user/shop changes; held phone reservations use audited RPCs and product-write guards, release at the exact timestamp deadline, and hourly SQL cleanup persists expiry history.
