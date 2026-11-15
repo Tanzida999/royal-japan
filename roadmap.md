@@ -1,3 +1,8 @@
+# Supplier permission changes
+- [ ] All signed-in roles can view contacts, manage suppliers and quick-add; staff financial data stays hidden
+- [ ] Database-enforced unused-supplier deletion / linked-supplier deactivation with actor audit
+- [ ] Permission/deletion tests and database verification; real-account browser checks depend on external sign-in availability
+
 # English-only interface and Cash Check removal
 - [x] English labels throughout POS, navigation and receipts; preserve yen and stored Japanese data
 - [x] Remove Cash Check page, links, tile, dashboard reads and alerts; preserve tables/history
