@@ -31,3 +31,7 @@
 - Supplier IDs on products are authoritative; retain legacy cost names as historical snapshots, link through a validated trigger, and expose only active IDs/names to staff so saved contact details and costs remain private.
 - Supplier directory writes use owner/manager-checked RPCs with audit triggers; manager purchase/dues reads use a shop-scoped RPC without widening owner-only cost table access.
 - New Sale and Sales History share paginated, user/shop-keyed sales queries and JST receipt totals; database policies independently enforce assigned-shop reads.
+- POS checkout uses complete_pos_sale for atomic mixed-item inventory, discount/price authorization, payment validation and idempotent receipts; legacy cart checkout delegates to it so alternate callers cannot bypass register rules.
+- Active register state is scoped to user and shop and clears on identity/location changes; held orders persist through shop-authorized RPCs without reserving stock.
+- Accessories and custom sales use pos_sale_lines alongside phone sales; combined summaries retain phone-only cost/profit accounting to avoid inventing accessory costs.
+- Shared receipts use high-entropy bearer links and a narrow public RPC projection excluding customer contacts, staff identities, IMEIs and internal identifiers.

@@ -1,0 +1,94 @@
+create function public.pos_shop_access(_shop uuid) returns boolean language sql stable security definer set search_path=public as $$ select has_role(auth.uid(),'owner') or ((has_role(auth.uid(),'staff') or has_role(auth.uid(),'manager')) and _shop=my_shop_id()) $$;
+revoke all on function public.pos_shop_access(uuid) from public,anon; grant execute on function public.pos_shop_access(uuid) to authenticated;
+create table public.pos_settings(shop_id uuid primary key references shops(id),custom_enabled boolean not null default true,staff_discount_percent integer not null default 0 check(staff_discount_percent between 0 and 100),created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+grant select on public.pos_settings to authenticated; grant all on public.pos_settings to service_role;
+alter table public.pos_settings enable row level security;
+create policy "shop register settings" on public.pos_settings for select to authenticated using(pos_shop_access(shop_id));
+insert into public.pos_settings(shop_id) select id from shops;
+create table public.accessories(id uuid primary key default gen_random_uuid(),shop_id uuid not null references shops(id),name text not null check(length(btrim(name)) between 1 and 100),sku text not null,quantity integer not null default 0 check(quantity>=0),selling_price integer not null check(selling_price>=0),active boolean not null default true,created_by uuid not null,created_at timestamptz not null default now(),updated_at timestamptz not null default now(),unique(shop_id,sku));
+grant select on public.accessories to authenticated; grant all on public.accessories to service_role;
+alter table public.accessories enable row level security;
+create policy "shop accessory stock" on public.accessories for select to authenticated using(pos_shop_access(shop_id));
+create table public.customers(id uuid primary key default gen_random_uuid(),shop_id uuid not null references shops(id),name text not null check(length(btrim(name)) between 1 and 100),phone text not null default '',email text not null default '',notes text not null default '',created_by uuid not null,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+grant select on public.customers to authenticated; grant all on public.customers to service_role;
+alter table public.customers enable row level security;
+create policy "shop customers" on public.customers for select to authenticated using(pos_shop_access(shop_id));
+create table public.held_sales(id uuid primary key default gen_random_uuid(),shop_id uuid not null references shops(id),created_by uuid not null,name text not null default '',cart jsonb not null,status text not null default 'held' check(status in ('held','resumed')),created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+grant select on public.held_sales to authenticated; grant all on public.held_sales to service_role;
+alter table public.held_sales enable row level security;
+create policy "own shop held orders" on public.held_sales for select to authenticated using(pos_shop_access(shop_id) and (created_by=auth.uid() or has_role(auth.uid(),'owner') or has_role(auth.uid(),'manager')));
+create table public.cash_checks(id uuid primary key default gen_random_uuid(),shop_id uuid not null references shops(id),day date not null,opening_cash integer not null check(opening_cash>=0),cash_sales integer not null,expected integer not null,counted integer not null check(counted>=0),difference integer not null,created_by uuid not null,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+grant select on public.cash_checks to authenticated; grant all on public.cash_checks to service_role;
+alter table public.cash_checks enable row level security;
+create policy "shop cash checks" on public.cash_checks for select to authenticated using(pos_shop_access(shop_id));
+create table public.pos_sale_lines(id uuid primary key default gen_random_uuid(),receipt_id uuid not null references receipts(id),shop_id uuid not null references shops(id),accessory_id uuid references accessories(id),kind text not null check(kind in ('accessory','custom')),name text not null,quantity integer not null check(quantity>0),item_price integer not null,sale_price integer not null,created_at timestamptz not null default now(),updated_at timestamptz not null default now());
+grant select on public.pos_sale_lines to authenticated; grant all on public.pos_sale_lines to service_role;
+alter table public.pos_sale_lines enable row level security;
+create policy "shop non phone sales" on public.pos_sale_lines for select to authenticated using(pos_shop_access(shop_id));
+alter table public.receipts add column payment_breakdown jsonb not null default '[]'::jsonb,add column tax integer not null default 0,add column customer_id uuid references customers(id),add column checkout_key uuid unique,add column share_token uuid not null default gen_random_uuid();
+create unique index receipt_share_token on receipts(share_token);
+create function public.pos_touch() returns trigger language plpgsql set search_path=public as $$ begin new.updated_at=now();return new;end $$;
+do $$ declare t text; begin foreach t in array array['pos_settings','accessories','customers','held_sales','cash_checks','pos_sale_lines'] loop execute format('create trigger pos_touch before update on public.%I for each row execute function public.pos_touch()',t);execute format('create trigger audit_pos after insert or update on public.%I for each row execute function public.audit_row()',t);end loop;end $$;
+create trigger audit_receipts after insert or update on public.receipts for each row execute function public.audit_row();
+create function public.save_pos_record(_kind text,_shop uuid,_id uuid,_data jsonb) returns jsonb language plpgsql security definer set search_path=public as $$ declare result jsonb;expected_cash integer;begin
+if not coalesce(pos_shop_access(_shop),false) then raise exception 'Not allowed for this shop';end if;
+if _kind in ('settings','accessory') and not (has_role(auth.uid(),'owner') or has_role(auth.uid(),'manager')) then raise exception 'Only owners and managers can manage register settings and stock';end if;
+if _kind='settings' then insert into pos_settings(shop_id,custom_enabled,staff_discount_percent) values(_shop,(_data->>'custom_enabled')::boolean,(_data->>'staff_discount_percent')::integer) on conflict(shop_id) do update set custom_enabled=excluded.custom_enabled,staff_discount_percent=excluded.staff_discount_percent returning to_jsonb(pos_settings.*) into result;
+elsif _kind='accessory' then
+if _id is null then insert into accessories(shop_id,name,sku,quantity,selling_price,active,created_by) values(_shop,btrim(_data->>'name'),btrim(_data->>'sku'),(_data->>'quantity')::integer,(_data->>'selling_price')::integer,coalesce((_data->>'active')::boolean,true),auth.uid()) returning to_jsonb(accessories.*) into result;
+else update accessories set name=btrim(_data->>'name'),sku=btrim(_data->>'sku'),quantity=(_data->>'quantity')::integer,selling_price=(_data->>'selling_price')::integer,active=coalesce((_data->>'active')::boolean,true) where id=_id and shop_id=_shop returning to_jsonb(accessories.*) into result;end if;
+elsif _kind='customer' then
+if _id is null then insert into customers(shop_id,name,phone,email,notes,created_by) values(_shop,btrim(_data->>'name'),left(coalesce(_data->>'phone',''),50),left(coalesce(_data->>'email',''),200),left(coalesce(_data->>'notes',''),2000),auth.uid()) returning to_jsonb(customers.*) into result;
+else update customers set name=btrim(_data->>'name'),phone=left(coalesce(_data->>'phone',''),50),email=left(coalesce(_data->>'email',''),200),notes=left(coalesce(_data->>'notes',''),2000) where id=_id and shop_id=_shop returning to_jsonb(customers.*) into result;end if;
+elsif _kind='hold' then
+if jsonb_typeof(_data->'items') is distinct from 'array' or jsonb_array_length(_data->'items') not between 1 and 100 then raise exception 'Hold 1 to 100 items';end if;
+insert into held_sales(shop_id,created_by,name,cart) values(_shop,auth.uid(),left(coalesce(_data->>'name',''),100),_data) returning to_jsonb(held_sales.*) into result;
+elsif _kind='resume' then update held_sales set status='resumed' where id=_id and shop_id=_shop and status='held' and (created_by=auth.uid() or has_role(auth.uid(),'owner') or has_role(auth.uid(),'manager')) returning to_jsonb(held_sales.*) into result;
+elsif _kind='cash' then
+select coalesce(sum(case when jsonb_array_length(payment_breakdown)>0 then (select coalesce(sum((x->>'amount')::int),0) from jsonb_array_elements(payment_breakdown) x where x->>'method'='Cash')-change_due when payment='Cash' then total else 0 end),0) into expected_cash from receipts where shop_id=_shop and (created_at at time zone 'Asia/Tokyo')::date=(_data->>'day')::date;
+insert into cash_checks(shop_id,day,opening_cash,cash_sales,expected,counted,difference,created_by) values(_shop,(_data->>'day')::date,(_data->>'opening_cash')::int,expected_cash,expected_cash+(_data->>'opening_cash')::int,(_data->>'counted')::int,(_data->>'counted')::int-expected_cash-(_data->>'opening_cash')::int,auth.uid()) returning to_jsonb(cash_checks.*) into result;
+else raise exception 'Unknown register action';end if;
+if result is null then raise exception 'Record unavailable';end if;return result;end $$;
+revoke all on function public.save_pos_record(text,uuid,uuid,jsonb) from public,anon;grant execute on function public.save_pos_record(text,uuid,uuid,jsonb) to authenticated;
+create function public.complete_pos_sale(_shop uuid,_staff_code text,_items jsonb,_discount integer,_payments jsonb,_customer uuid,_customer_name text,_customer_phone text,_key uuid) returns public.receipts language plpgsql security definer set search_path=public as $$
+declare r receipts;p products;a accessories;staff profiles;sh shops;cfg pos_settings;item jsonb;pay jsonb;snaps jsonb:='[]';kind text;qty integer;price integer;standard integer;ld integer;base bigint:=0;gross bigint:=0;line_total bigint:=0;total bigint;paid bigint:=0;noncash bigint:=0;cash bigint:=0;cum bigint:=0;before_net bigint;net integer;privileged boolean;label text;method text;begin
+if _key is null then raise exception 'Checkout identifier required';end if;
+if not coalesce(pos_shop_access(_shop),false) then raise exception 'Not allowed for this shop';end if;
+perform pg_advisory_xact_lock(hashtextextended(_key::text,0));
+select * into r from receipts where checkout_key=_key;if found then if r.shop_id<>_shop or r.sold_by<>auth.uid() then raise exception 'Checkout identifier already used';end if;return r;end if;
+perform check_staff_code(_staff_code);select * into staff from profiles where staff_code=upper(btrim(_staff_code));
+if staff.shop_id is not null and staff.shop_id is distinct from _shop then raise exception 'Staff badge belongs to another shop';end if;
+select * into sh from shops where id=_shop;if not found then raise exception 'Pick a shop';end if;
+select * into cfg from pos_settings where shop_id=_shop;privileged:=has_role(auth.uid(),'owner') or has_role(auth.uid(),'manager');
+if _customer is not null then select name,phone into _customer_name,_customer_phone from customers where id=_customer and shop_id=_shop;if not found then raise exception 'Customer belongs to another shop';end if;end if;
+if jsonb_typeof(_items) is distinct from 'array' or jsonb_array_length(_items) not between 1 and 100 then raise exception 'Cart must contain 1 to 100 lines';end if;
+if (select count(*) from jsonb_array_elements(_items) x where x->>'kind'<>'custom')<>(select count(distinct (x->>'kind')||':'||(x->>'id')) from jsonb_array_elements(_items) x where x->>'kind'<>'custom') then raise exception 'Duplicate stock item';end if;
+perform id from products where id in(select (x->>'id')::uuid from jsonb_array_elements(_items) x where x->>'kind'='phone') order by id for update;
+perform id from accessories where id in(select (x->>'id')::uuid from jsonb_array_elements(_items) x where x->>'kind'='accessory') order by id for update;
+for item in select value from jsonb_array_elements(_items) loop
+kind:=item->>'kind';qty:=(item->>'quantity')::int;price:=(item->>'price')::int;ld:=coalesce((item->>'discount')::int,0);
+if qty is null or qty<1 or qty>10000 or price is null or price<0 then raise exception 'Invalid quantity or price';end if;
+if kind='phone' then select * into p from products where id=(item->>'id')::uuid;if not found or p.status<>'in_stock' or p.current_shop_id is distinct from _shop then raise exception 'Phone is not in stock at this shop';end if;if qty<>1 then raise exception 'Phone quantity must be one';end if;standard:=p.selling_price;label:=(select brand||' '||model from models where id=p.model_id);
+elsif kind='accessory' then select * into a from accessories where id=(item->>'id')::uuid;if not found or a.shop_id<>_shop or not a.active or qty>a.quantity then raise exception 'Accessory stock unavailable';end if;standard:=a.selling_price;label:=a.name;
+elsif kind='custom' then if not coalesce(cfg.custom_enabled,true) then raise exception 'Custom items disabled';end if;label:=btrim(item->>'name');if coalesce(length(label),0) not between 1 and 100 then raise exception 'Enter a custom item name';end if;standard:=price;
+else raise exception 'Invalid item type';end if;
+if not privileged and price<>standard then raise exception 'Only owners and managers can edit prices';end if;
+base:=price::bigint*qty;if ld<0 or ld>base then raise exception 'Invalid line discount';end if;gross:=gross+base;line_total:=line_total+base-ld;
+snaps:=snaps||jsonb_build_array(jsonb_build_object('kind',kind,'product_id',case when kind='phone' then p.id else null end,'accessory_id',case when kind='accessory' then a.id else null end,'model',label,'imei',case when kind='phone' then p.imei else '' end,'storage',case when kind='phone' then p.storage else '' end,'color',case when kind='phone' then p.color else '' end,'quantity',qty,'unit_price',price,'discount',ld,'price',base-ld));end loop;
+if _discount is null or _discount<0 or _discount>line_total then raise exception 'Invalid order discount';end if;
+if not privileged and gross-line_total+_discount>floor(gross*coalesce(cfg.staff_discount_percent,0)/100) then raise exception 'Staff discount limit exceeded';end if;
+total:=line_total-_discount;if total>2147483647 or gross>2147483647 then raise exception 'Order total too large';end if;
+if jsonb_typeof(_payments) is distinct from 'array' or jsonb_array_length(_payments) not between 1 and 4 then raise exception 'Select payment methods';end if;
+if (select count(distinct x->>'method') from jsonb_array_elements(_payments) x)<>jsonb_array_length(_payments) then raise exception 'Duplicate payment method';end if;
+for pay in select value from jsonb_array_elements(_payments) loop method:=pay->>'method';price:=(pay->>'amount')::int;if method not in ('Cash','Card','PayPay','Bank') or method is null or price is null or price<0 then raise exception 'Invalid payment';end if;paid:=paid+price;if method='Cash' then cash:=cash+price;else noncash:=noncash+price;end if;end loop;
+if paid<total or noncash>total or paid-total>cash or paid>2147483647 then raise exception 'Payments must cover total; change is cash only';end if;
+insert into receipts(shop_id,sold_by,staff_code,staff_name,customer_id,customer_name,customer_phone,payment,payment_breakdown,subtotal,discount,total,paid,change_due,tax,shop_snapshot,items,checkout_key) values(_shop,auth.uid(),staff.staff_code,staff.name,_customer,left(coalesce(_customer_name,''),100),left(coalesce(_customer_phone,''),50),_payments->0->>'method',_payments,gross,gross-total,total,paid,paid-total,floor(total*10.0/110),to_jsonb(sh),snaps,_key) returning * into r;
+for item in select value from jsonb_array_elements(snaps) loop base:=(item->>'price')::bigint;before_net:=case when line_total=0 then 0 else floor(cum::numeric*total/line_total)::bigint end;cum:=cum+base;net:=case when line_total=0 then 0 else floor(cum::numeric*total/line_total)::bigint-before_net end;
+if item->>'kind'='phone' then insert into sales(receipt_no,receipt_id,product_id,item_price,sale_price,customer_name,payment,shop_id,sold_by,staff_code,created_at) values(r.receipt_no,r.id,(item->>'product_id')::uuid,(item->>'unit_price')::int,net,r.customer_name,r.payment,_shop,auth.uid(),staff.staff_code,r.created_at);update products set status='sold' where id=(item->>'product_id')::uuid;
+else insert into pos_sale_lines(receipt_id,shop_id,accessory_id,kind,name,quantity,item_price,sale_price,created_at) values(r.id,_shop,nullif(item->>'accessory_id','')::uuid,item->>'kind',item->>'model',(item->>'quantity')::int,(item->>'unit_price')::int,net,r.created_at);if item->>'kind'='accessory' then update accessories set quantity=quantity-(item->>'quantity')::int where id=(item->>'accessory_id')::uuid;end if;end if;end loop;return r;end $$;
+revoke all on function public.complete_pos_sale(uuid,text,jsonb,integer,jsonb,uuid,text,text,uuid) from public,anon;grant execute on function public.complete_pos_sale(uuid,text,jsonb,integer,jsonb,uuid,text,text,uuid) to authenticated;
+create or replace function public.complete_cart_sale(_shop_id uuid,_staff_code text,_items jsonb,_discount integer,_paid integer,_payment text,_customer_name text,_customer_phone text) returns receipts language plpgsql security definer set search_path=public as $$ declare mapped jsonb;begin select jsonb_agg(jsonb_build_object('kind','phone','id',x->>'product_id','quantity',1,'price',x->>'price','discount',0)) into mapped from jsonb_array_elements(_items) x;return complete_pos_sale(_shop_id,_staff_code,mapped,_discount,jsonb_build_array(jsonb_build_object('method',_payment,'amount',_paid)),null,_customer_name,_customer_phone,gen_random_uuid());end $$;
+create function public.shared_pos_receipt(_token uuid) returns jsonb language sql stable security definer set search_path=public as $$ select jsonb_build_object('receipt_no',r.receipt_no,'date',r.created_at,'shop',r.shop_snapshot->>'name','total',r.total,'tax',r.tax,'items',(select jsonb_agg(jsonb_build_object('name',x->>'model','quantity',coalesce(x->>'quantity','1'),'amount',x->>'price')) from jsonb_array_elements(r.items) x)) from receipts r where r.share_token=_token $$;
+revoke all on function public.shared_pos_receipt(uuid) from public;grant execute on function public.shared_pos_receipt(uuid) to anon,authenticated;
+comment on function public.shared_pos_receipt(uuid) is 'Bearer-link receipt projection: no customer contacts, staff, IMEI or other receipt access.';
+comment on function public.complete_pos_sale(uuid,text,jsonb,integer,jsonb,uuid,text,text,uuid) is 'Atomic shop-authorized checkout validates staff, stock, price permissions, discount limits and split payments; idempotent per caller key.';

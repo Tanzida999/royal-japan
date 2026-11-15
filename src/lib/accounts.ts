@@ -50,5 +50,5 @@ export function toCsv(rows: (string | number | null | undefined)[][]) {
 }
 
 export function homeFor(role: string | null | undefined) {
-  return role === "owner" ? "/dashboard" : "/sell";
+  return role ? "/home" : "/auth";
 }

@@ -9,6 +9,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { jstDate, meQuery, shopsQuery, yen } from "@/lib/app";
 import { buildAlerts } from "@/lib/alerts";
+import { paged } from "@/lib/register-data";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => pageMeta("Owner Dashboard — Mobile Shop Manager", "Track shop stock, sales, profits and overdue transfer alerts."),
@@ -34,17 +35,18 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [sales, products, costs, transfers] = await Promise.all([
+      const [sales, products, costs, transfers, otherSales] = await Promise.all([
         supabase.from("sales").select("receipt_no, product_id, sale_price, shop_id, created_at"),
         supabase.from("products").select("id, product_code, shop_id, current_shop_id, status, created_at, storage, carrier, tracking_number, models(brand, model)"),
         supabase.from("product_costs").select("product_id, purchase_price"),
         supabase.from("transfers").select("product_id, from_shop_id, to_shop_id, status, accepted_at, reject_reason"),
+        paged(async start => { const { data, error } = await supabase.from("pos_sale_lines").select("shop_id,sale_price,quantity,created_at").order("id").range(start,start+999); if(error)throw error; return data; }),
       ]);
       if (transfers.error) throw transfers.error;
       if (sales.error) throw sales.error;
       if (products.error) throw products.error;
       if (costs.error) throw costs.error;
-      return { sales: sales.data, products: products.data, costs: costs.data, transfers: transfers.data };
+      return { sales: sales.data, products: products.data, costs: costs.data, transfers: transfers.data, otherSales };
     },
   });
 
@@ -53,7 +55,7 @@ function Dashboard() {
   const cost = Object.fromEntries(data.costs.map((c) => [c.product_id, c.purchase_price]));
   const period = monthSel ? `${year}-${monthSel}` : year;
   const periodLabel = monthSel ? `${MONTHS[Number(monthSel) - 1]} ${year}` : year;
-  const years = [...new Set([today.slice(0, 4), ...data.sales.map((s) => jstDate(s.created_at).slice(0, 4))])].sort().reverse();
+  const years = [...new Set([today.slice(0, 4), ...[...data.sales,...data.otherSales].map((s) => jstDate(s.created_at).slice(0, 4))])].sort().reverse();
   const inShop = (id: string) => !shopSel || id === shopSel;
 
   const totals = { today: empty(), period: empty() };
@@ -79,6 +81,11 @@ function Dashboard() {
     }
   }
   let stock = 0;
+  for (const s of data.otherSales) {
+    const d = jstDate(s.created_at); const b = byShop[s.shop_id];
+    if (d === today) { if(inShop(s.shop_id)) totals.today.revenue += s.sale_price; if(b) b.today.revenue += s.sale_price; }
+    if (d.startsWith(period)) { if(inShop(s.shop_id)) totals.period.revenue += s.sale_price; if(b) b.period.revenue += s.sale_price; }
+  }
   let stockValue = 0;
   for (const p of data.products) {
     if (p.status !== "in_stock") continue;

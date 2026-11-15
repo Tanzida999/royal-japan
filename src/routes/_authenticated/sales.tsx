@@ -103,7 +103,7 @@ function Sales() {
   }
 
   const total = filtered.reduce((a, r) => a + r.sale_price, 0);
-  const profit = filtered.reduce((a, r) => a + r.sale_price - (costs[r.product_id] ?? 0), 0);
+  const profit = filtered.filter(r => r.product_id).reduce((a, r) => a + r.sale_price - (costs[r.product_id] ?? 0), 0);
 
   return (
     <div className="space-y-4">
@@ -121,7 +121,7 @@ function Sales() {
       {reprintError && <p role="alert" className="text-destructive">{reprintError}</p>}
       <div className="text-sm text-muted-foreground">
         Total: <span className="font-semibold text-foreground">{yen(total)}</span>
-        {isOwner && <> · Profit: <span className="font-semibold text-foreground">{yen(profit)}</span></>}
+        {isOwner && <> · Phone profit: <span className="font-semibold text-foreground">{yen(profit)}</span></>}
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">
@@ -129,7 +129,7 @@ function Sales() {
             <tr>
               <th className="p-2">Receipt</th>
               <th className="p-2">Date</th>
-              <th className="p-2">Phone</th>
+              <th className="p-2">Item</th>
               <th className="p-2">Shop</th>
               <th className="p-2">Staff</th>
               <th className="p-2">Payment</th>

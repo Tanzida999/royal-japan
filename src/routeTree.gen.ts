@@ -16,8 +16,15 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticated/account'
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedAddRouteImport } from './routes/_authenticated/add'
+import { Route as AuthenticatedCartRouteImport } from './routes/_authenticated/cart'
+import { Route as AuthenticatedCashCheckRouteImport } from './routes/_authenticated/cash-check'
+import { Route as AuthenticatedCompletedRouteImport } from './routes/_authenticated/completed'
+import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/find'
+import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
+import { Route as AuthenticatedPaymentRouteImport } from './routes/_authenticated/payment'
+import { Route as AuthenticatedPosSettingsRouteImport } from './routes/_authenticated/pos-settings'
 import { Route as AuthenticatedSalesRouteImport } from './routes/_authenticated/sales'
 import { Route as AuthenticatedSellRouteImport } from './routes/_authenticated/sell'
 import { Route as AuthenticatedShopsRouteImport } from './routes/_authenticated/shops'
@@ -26,6 +33,7 @@ import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedStockCheckRouteImport } from './routes/_authenticated/stock-check'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
+import { Route as ReceiptTokenRouteImport } from './routes/receipt.$token'
 import { Route as AuthenticatedProductIdRouteImport } from './routes/_authenticated/product.$id'
 import { Route as AuthenticatedSuppliersIdRouteImport } from './routes/_authenticated/suppliers.$id'
 import { Route as ApiPublicJobsExpireTransfersRouteImport } from './routes/api/public/jobs/expire-transfers'
@@ -64,6 +72,26 @@ const AuthenticatedAddRoute = AuthenticatedAddRouteImport.update({
   path: '/add',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedCartRoute = AuthenticatedCartRouteImport.update({
+  id: '/cart',
+  path: '/cart',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCashCheckRoute = AuthenticatedCashCheckRouteImport.update({
+  id: '/cash-check',
+  path: '/cash-check',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCompletedRoute = AuthenticatedCompletedRouteImport.update({
+  id: '/completed',
+  path: '/completed',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCustomersRoute = AuthenticatedCustomersRouteImport.update({
+  id: '/customers',
+  path: '/customers',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -74,6 +102,22 @@ const AuthenticatedFindRoute = AuthenticatedFindRouteImport.update({
   path: '/find',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
+  id: '/home',
+  path: '/home',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPaymentRoute = AuthenticatedPaymentRouteImport.update({
+  id: '/payment',
+  path: '/payment',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPosSettingsRoute =
+  AuthenticatedPosSettingsRouteImport.update({
+    id: '/pos-settings',
+    path: '/pos-settings',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedSalesRoute = AuthenticatedSalesRouteImport.update({
   id: '/sales',
   path: '/sales',
@@ -114,6 +158,11 @@ const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
   path: '/transfers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ReceiptTokenRoute = ReceiptTokenRouteImport.update({
+  id: '/receipt/$token',
+  path: '/receipt/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedProductIdRoute = AuthenticatedProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -139,8 +188,15 @@ export interface FileRoutesByFullPath {
   '/account': typeof AuthenticatedAccountRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/add': typeof AuthenticatedAddRoute
+  '/cart': typeof AuthenticatedCartRoute
+  '/cash-check': typeof AuthenticatedCashCheckRoute
+  '/completed': typeof AuthenticatedCompletedRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/find': typeof AuthenticatedFindRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/payment': typeof AuthenticatedPaymentRoute
+  '/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/shops': typeof AuthenticatedShopsRoute
@@ -149,6 +205,7 @@ export interface FileRoutesByFullPath {
   '/stock-check': typeof AuthenticatedStockCheckRoute
   '/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/receipt/$token': typeof ReceiptTokenRoute
   '/product/$id': typeof AuthenticatedProductIdRoute
   '/suppliers/$id': typeof AuthenticatedSuppliersIdRoute
   '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
@@ -160,8 +217,15 @@ export interface FileRoutesByTo {
   '/account': typeof AuthenticatedAccountRoute
   '/activity': typeof AuthenticatedActivityRoute
   '/add': typeof AuthenticatedAddRoute
+  '/cart': typeof AuthenticatedCartRoute
+  '/cash-check': typeof AuthenticatedCashCheckRoute
+  '/completed': typeof AuthenticatedCompletedRoute
+  '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/find': typeof AuthenticatedFindRoute
+  '/home': typeof AuthenticatedHomeRoute
+  '/payment': typeof AuthenticatedPaymentRoute
+  '/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/sales': typeof AuthenticatedSalesRoute
   '/sell': typeof AuthenticatedSellRoute
   '/shops': typeof AuthenticatedShopsRoute
@@ -170,6 +234,7 @@ export interface FileRoutesByTo {
   '/stock-check': typeof AuthenticatedStockCheckRoute
   '/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
+  '/receipt/$token': typeof ReceiptTokenRoute
   '/product/$id': typeof AuthenticatedProductIdRoute
   '/suppliers/$id': typeof AuthenticatedSuppliersIdRoute
   '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
@@ -183,8 +248,15 @@ export interface FileRoutesById {
   '/_authenticated/account': typeof AuthenticatedAccountRoute
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/add': typeof AuthenticatedAddRoute
+  '/_authenticated/cart': typeof AuthenticatedCartRoute
+  '/_authenticated/cash-check': typeof AuthenticatedCashCheckRoute
+  '/_authenticated/completed': typeof AuthenticatedCompletedRoute
+  '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/find': typeof AuthenticatedFindRoute
+  '/_authenticated/home': typeof AuthenticatedHomeRoute
+  '/_authenticated/payment': typeof AuthenticatedPaymentRoute
+  '/_authenticated/pos-settings': typeof AuthenticatedPosSettingsRoute
   '/_authenticated/sales': typeof AuthenticatedSalesRoute
   '/_authenticated/sell': typeof AuthenticatedSellRoute
   '/_authenticated/shops': typeof AuthenticatedShopsRoute
@@ -193,6 +265,7 @@ export interface FileRoutesById {
   '/_authenticated/stock-check': typeof AuthenticatedStockCheckRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
+  '/receipt/$token': typeof ReceiptTokenRoute
   '/_authenticated/product/$id': typeof AuthenticatedProductIdRoute
   '/_authenticated/suppliers/$id': typeof AuthenticatedSuppliersIdRoute
   '/api/public/jobs/expire-transfers': typeof ApiPublicJobsExpireTransfersRoute
@@ -206,8 +279,15 @@ export interface FileRouteTypes {
     | '/account'
     | '/activity'
     | '/add'
+    | '/cart'
+    | '/cash-check'
+    | '/completed'
+    | '/customers'
     | '/dashboard'
     | '/find'
+    | '/home'
+    | '/payment'
+    | '/pos-settings'
     | '/sales'
     | '/sell'
     | '/shops'
@@ -216,6 +296,7 @@ export interface FileRouteTypes {
     | '/stock-check'
     | '/suppliers'
     | '/transfers'
+    | '/receipt/$token'
     | '/product/$id'
     | '/suppliers/$id'
     | '/api/public/jobs/expire-transfers'
@@ -227,8 +308,15 @@ export interface FileRouteTypes {
     | '/account'
     | '/activity'
     | '/add'
+    | '/cart'
+    | '/cash-check'
+    | '/completed'
+    | '/customers'
     | '/dashboard'
     | '/find'
+    | '/home'
+    | '/payment'
+    | '/pos-settings'
     | '/sales'
     | '/sell'
     | '/shops'
@@ -237,6 +325,7 @@ export interface FileRouteTypes {
     | '/stock-check'
     | '/suppliers'
     | '/transfers'
+    | '/receipt/$token'
     | '/product/$id'
     | '/suppliers/$id'
     | '/api/public/jobs/expire-transfers'
@@ -249,8 +338,15 @@ export interface FileRouteTypes {
     | '/_authenticated/account'
     | '/_authenticated/activity'
     | '/_authenticated/add'
+    | '/_authenticated/cart'
+    | '/_authenticated/cash-check'
+    | '/_authenticated/completed'
+    | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/find'
+    | '/_authenticated/home'
+    | '/_authenticated/payment'
+    | '/_authenticated/pos-settings'
     | '/_authenticated/sales'
     | '/_authenticated/sell'
     | '/_authenticated/shops'
@@ -259,6 +355,7 @@ export interface FileRouteTypes {
     | '/_authenticated/stock-check'
     | '/_authenticated/suppliers'
     | '/_authenticated/transfers'
+    | '/receipt/$token'
     | '/_authenticated/product/$id'
     | '/_authenticated/suppliers/$id'
     | '/api/public/jobs/expire-transfers'
@@ -269,6 +366,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ReceiptTokenRoute: typeof ReceiptTokenRoute
   ApiPublicJobsExpireTransfersRoute: typeof ApiPublicJobsExpireTransfersRoute
 }
 
@@ -323,6 +421,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAddRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/cart': {
+      id: '/_authenticated/cart'
+      path: '/cart'
+      fullPath: '/cart'
+      preLoaderRoute: typeof AuthenticatedCartRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/cash-check': {
+      id: '/_authenticated/cash-check'
+      path: '/cash-check'
+      fullPath: '/cash-check'
+      preLoaderRoute: typeof AuthenticatedCashCheckRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/completed': {
+      id: '/_authenticated/completed'
+      path: '/completed'
+      fullPath: '/completed'
+      preLoaderRoute: typeof AuthenticatedCompletedRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/customers': {
+      id: '/_authenticated/customers'
+      path: '/customers'
+      fullPath: '/customers'
+      preLoaderRoute: typeof AuthenticatedCustomersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -335,6 +461,27 @@ declare module '@tanstack/react-router' {
       path: '/find'
       fullPath: '/find'
       preLoaderRoute: typeof AuthenticatedFindRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/home': {
+      id: '/_authenticated/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof AuthenticatedHomeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/payment': {
+      id: '/_authenticated/payment'
+      path: '/payment'
+      fullPath: '/payment'
+      preLoaderRoute: typeof AuthenticatedPaymentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/pos-settings': {
+      id: '/_authenticated/pos-settings'
+      path: '/pos-settings'
+      fullPath: '/pos-settings'
+      preLoaderRoute: typeof AuthenticatedPosSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/sales': {
@@ -393,6 +540,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTransfersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/receipt/$token': {
+      id: '/receipt/$token'
+      path: '/receipt/$token'
+      fullPath: '/receipt/$token'
+      preLoaderRoute: typeof ReceiptTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/product/$id': {
       id: '/_authenticated/product/$id'
       path: '/product/$id'
@@ -435,8 +589,15 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAccountRoute: typeof AuthenticatedAccountRoute
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedAddRoute: typeof AuthenticatedAddRoute
+  AuthenticatedCartRoute: typeof AuthenticatedCartRoute
+  AuthenticatedCashCheckRoute: typeof AuthenticatedCashCheckRoute
+  AuthenticatedCompletedRoute: typeof AuthenticatedCompletedRoute
+  AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFindRoute: typeof AuthenticatedFindRoute
+  AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
+  AuthenticatedPaymentRoute: typeof AuthenticatedPaymentRoute
+  AuthenticatedPosSettingsRoute: typeof AuthenticatedPosSettingsRoute
   AuthenticatedSalesRoute: typeof AuthenticatedSalesRoute
   AuthenticatedSellRoute: typeof AuthenticatedSellRoute
   AuthenticatedShopsRoute: typeof AuthenticatedShopsRoute
@@ -452,8 +613,15 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAccountRoute: AuthenticatedAccountRoute,
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedAddRoute: AuthenticatedAddRoute,
+  AuthenticatedCartRoute: AuthenticatedCartRoute,
+  AuthenticatedCashCheckRoute: AuthenticatedCashCheckRoute,
+  AuthenticatedCompletedRoute: AuthenticatedCompletedRoute,
+  AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFindRoute: AuthenticatedFindRoute,
+  AuthenticatedHomeRoute: AuthenticatedHomeRoute,
+  AuthenticatedPaymentRoute: AuthenticatedPaymentRoute,
+  AuthenticatedPosSettingsRoute: AuthenticatedPosSettingsRoute,
   AuthenticatedSalesRoute: AuthenticatedSalesRoute,
   AuthenticatedSellRoute: AuthenticatedSellRoute,
   AuthenticatedShopsRoute: AuthenticatedShopsRoute,
@@ -473,6 +641,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ReceiptTokenRoute: ReceiptTokenRoute,
   ApiPublicJobsExpireTransfersRoute: ApiPublicJobsExpireTransfersRoute,
 }
 export const routeTree = rootRouteImport

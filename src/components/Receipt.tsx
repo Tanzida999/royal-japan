@@ -17,11 +17,15 @@ export type ReceiptData = {
   phone?: string;
   logo?: string | null;
   footer?: string;
-  items?: { model: string; storage: string; color: string; condition?: string; imei: string; price: number }[];
+  items?: { model: string; storage: string; color: string; condition?: string; imei: string; price: number; quantity?: number | undefined; unit_price?: number }[];
   subtotal?: number;
   discount?: number;
   paid?: number;
   change?: number;
+  tax?: number | undefined;
+  payments?: { method: string; amount: number }[];
+  addressee?: string | undefined;
+  purpose?: string | undefined;
 };
 
 export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData; format?: "thermal" | "a4" }) {
@@ -32,9 +36,10 @@ export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData;
       {receipt.address && <div className="text-center text-xs">{receipt.postal_code} {receipt.address}</div>}
       {receipt.phone && <div className="text-center text-xs">Tel: {receipt.phone}</div>}
       <div className="text-center text-xs">Receipt {receipt.receipt_no}</div>
+      {receipt.addressee && <div className="space-y-2 border-y py-2"><div className="text-center text-lg font-bold">領収書</div><div>{receipt.addressee} 様</div><div>但し書き: {receipt.purpose || "商品代として"}</div></div>}
       <div className="text-xs">{receipt.date}</div>
       <hr />
-      {receipt.items ? receipt.items.map(i => <div key={i.imei} className="space-y-1 border-b pb-2"><div>{i.model} {i.storage} {i.color}</div><div className="text-xs">IMEI: {i.imei}</div><div className="text-right">{yen(i.price)}</div></div>) : <><div>{receipt.item}</div><div className="text-xs">IMEI: {receipt.imei}</div></>}
+      {receipt.items ? receipt.items.map((i,index) => <div key={`${i.imei}-${index}`} className="space-y-1 border-b pb-2"><div>{i.model} {i.storage} {i.color}</div>{i.imei && <div className="text-xs">IMEI: {i.imei}</div>}{i.quantity && <div className="text-xs">{i.quantity} × {yen(i.unit_price ?? i.price)}</div>}<div className="text-right">{yen(i.price)}</div></div>) : <><div>{receipt.item}</div><div className="text-xs">IMEI: {receipt.imei}</div></>}
       <hr />
       <div className="flex justify-between"><span>Subtotal</span><span>{yen(receipt.subtotal ?? receipt.price)}</span></div>
       <div className="flex justify-between"><span>Discount</span><span>{yen(receipt.discount ?? 0)}</span></div>
@@ -44,6 +49,8 @@ export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData;
       </div>
       <div className="flex justify-between"><span>Paid</span><span>{yen(receipt.paid ?? receipt.price)}</span></div>
       <div className="flex justify-between"><span>Change</span><span>{yen(receipt.change ?? 0)}</span></div>
+      {receipt.tax !== undefined && <div className="flex justify-between text-xs"><span>Incl. consumption tax (10%)</span><span>{yen(receipt.tax)}</span></div>}
+      {receipt.payments?.map(p => <div key={p.method} className="flex justify-between text-xs"><span>{p.method}</span><span>{yen(p.amount)}</span></div>)}
       <div className="flex justify-between text-xs">
         <span>Payment</span>
         <span>{receipt.payment}</span>

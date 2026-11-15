@@ -1,0 +1,5 @@
+import { create } from 'zustand';
+import type { RegisterLine } from './register-rules';
+import type { ReceiptData } from '@/components/Receipt';
+type RegisterState = { shop: string; owner: string; lines: RegisterLine[]; discount: number; key: string; receipt: ReceiptData | null; shareToken: string; setLines: (lines: RegisterLine[])=>void; setDiscount:(discount:number)=>void; start:(shop:string,owner:string)=>void; clear:()=>void; completed:(receipt:ReceiptData,token:string)=>void };
+export const useRegister = create<RegisterState>((set,get)=>({shop:'',owner:'',lines:[],discount:0,key:'',receipt:null,shareToken:'',setLines:lines=>set({lines}),setDiscount:discount=>set({discount}),start:(shop,owner)=>{if(get().shop!==shop||get().owner!==owner)set({shop,owner,lines:[],discount:0,key:crypto.randomUUID(),receipt:null,shareToken:''});},clear:()=>set({lines:[],discount:0,key:crypto.randomUUID(),receipt:null,shareToken:''}),completed:(receipt,shareToken)=>set({receipt,shareToken,lines:[],discount:0,key:crypto.randomUUID()})}));

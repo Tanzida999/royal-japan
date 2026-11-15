@@ -16,6 +16,7 @@ import { ShopProvider } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
 import { useQuery } from "@tanstack/react-query";
 import { meQuery } from "@/lib/app";
+import { RegisterScope } from "@/components/RegisterScope";
 
 function NotFoundComponent() {
   return (
@@ -125,7 +126,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <ShopProvider><CurrentShopHeader /><Outlet /></ShopProvider>
+      <ShopProvider><RegisterScope /><CurrentShopHeader /><Outlet /></ShopProvider>
     </QueryClientProvider>
   );
 }

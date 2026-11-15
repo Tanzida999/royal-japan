@@ -1,8 +1,9 @@
 # Requested additions
-- [ ] Japanese-style POS home and touch-friendly sale, cart, payment, and completion screens
-- [ ] Shop-scoped accessories, customers, held sales, cash check, and POS settings
-- [ ] Atomic mixed-item checkout, discount permissions, split payments, inclusive tax, receipts, and audit logging
-- [ ] Tests and desktop/mobile verification; authenticated end-to-end verification requires an available external Supabase session
+- [x] Japanese-style POS home and touch-friendly sale, cart, payment, and completion screens
+- [x] Shop-scoped accessories, customers, held sales, cash check, and POS settings
+- [x] Atomic mixed-item checkout, discount permissions, split payments, inclusive tax, receipts, and audit logging
+- [x] 54 rule/routing tests, database policy checks and desktop/mobile signed-out checks
+- [ ] Signed-in POS scanning, held-order resume, split checkout, saved receipt read-back and register layout verification — external Supabase has no available managed test session
 - [x] Supplier directory, active supplier selection and legacy purchase linking
 - [x] Owner/manager supplier access, shop-scoped sales and receipt security
 - [x] New Sale / Sales History labels and today's shop totals
@@ -17,6 +18,7 @@
 - [x] 31 passing rule/routing tests and signed-in browser checks, including cart checkout and transfer lifecycle
 
 ## Verification limits
+- Register functions intentionally remain callable by authorized signed-in users; shared receipts intentionally allow bearer-link reads of a narrow non-sensitive projection. Reviewed linter flags reflect this access model. Existing leaked-password protection is disabled.
 - No separate purchase-batches page or table exists; existing bulk purchase grouping uses the same supplier dropdown and linked phone records.
 - Physical cameras and printers require the user's hardware; print views and camera fallback are checked.
 - Real shop contact details and logos were not supplied and remain blank; no invented shop details.
