@@ -182,6 +182,7 @@ export type Database = {
           staff_code: string | null
           status: string
           storage: string
+          supplier_id: string | null
           tracking_number: string | null
         }
         Insert: {
@@ -200,6 +201,7 @@ export type Database = {
           staff_code?: string | null
           status?: string
           storage: string
+          supplier_id?: string | null
           tracking_number?: string | null
         }
         Update: {
@@ -218,6 +220,7 @@ export type Database = {
           staff_code?: string | null
           status?: string
           storage?: string
+          supplier_id?: string | null
           tracking_number?: string | null
         }
         Relationships: [
@@ -240,6 +243,13 @@ export type Database = {
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
             referencedColumns: ["id"]
           },
         ]
@@ -447,6 +457,54 @@ export type Database = {
         }
         Relationships: []
       }
+      suppliers: {
+        Row: {
+          address: string
+          company_name: string
+          contact_person: string
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          name: string
+          notes: string
+          payment_terms: string
+          phone: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          company_name?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          name: string
+          notes?: string
+          payment_terms?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          company_name?: string
+          contact_person?: string
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          id?: string
+          name?: string
+          notes?: string
+          payment_terms?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       transfers: {
         Row: {
           accepted_at: string | null
@@ -546,6 +604,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      active_suppliers: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       add_product: {
         Args: {
           _color: string
@@ -577,6 +642,7 @@ export type Database = {
           staff_code: string | null
           status: string
           storage: string
+          supplier_id: string | null
           tracking_number: string | null
         }
         SetofOptions: {
@@ -600,6 +666,47 @@ export type Database = {
           to: "product_photos"
           isOneToOne: false
           isSetofReturn: true
+        }
+      }
+      add_product_with_supplier: {
+        Args: {
+          _color: string
+          _condition: string
+          _imei: string
+          _model_id: string
+          _paid_amount: number
+          _purchase_price: number
+          _selling_price: number
+          _shop_id: string
+          _staff_code: string
+          _storage: string
+          _supplier_id: string
+          _supplier_payment: string
+        }
+        Returns: {
+          carrier: string | null
+          color: string
+          condition: string
+          created_at: string
+          created_by: string
+          current_shop_id: string | null
+          id: string
+          imei: string
+          model_id: string
+          product_code: string
+          selling_price: number
+          shop_id: string
+          staff_code: string | null
+          status: string
+          storage: string
+          supplier_id: string | null
+          tracking_number: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: true
+          isSetofReturn: false
         }
       }
       add_products_bulk: {
@@ -627,6 +734,42 @@ export type Database = {
           staff_code: string | null
           status: string
           storage: string
+          supplier_id: string | null
+          tracking_number: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "products"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      add_products_bulk_with_supplier: {
+        Args: {
+          _items: Json
+          _paid_amount: number
+          _shop_id: string
+          _staff_code: string
+          _supplier_id: string
+          _supplier_payment: string
+        }
+        Returns: {
+          carrier: string | null
+          color: string
+          condition: string
+          created_at: string
+          created_by: string
+          current_shop_id: string | null
+          id: string
+          imei: string
+          model_id: string
+          product_code: string
+          selling_price: number
+          shop_id: string
+          staff_code: string | null
+          status: string
+          storage: string
+          supplier_id: string | null
           tracking_number: string | null
         }[]
         SetofOptions: {
@@ -848,6 +991,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_supplier: {
+        Args: { _details: Json; _id: string }
+        Returns: {
+          address: string
+          company_name: string
+          contact_person: string
+          created_at: string
+          created_by: string | null
+          email: string
+          id: string
+          name: string
+          notes: string
+          payment_terms: string
+          phone: string
+          status: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "suppliers"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       save_transit_limit: { Args: { _hours: number }; Returns: undefined }
       set_product_tracking: {
         Args: {
@@ -871,6 +1038,7 @@ export type Database = {
           staff_code: string | null
           status: string
           storage: string
+          supplier_id: string | null
           tracking_number: string | null
         }
         SetofOptions: {
@@ -879,6 +1047,23 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      supplier_purchases: {
+        Args: never
+        Returns: {
+          color: string
+          created_at: string
+          imei: string
+          model_name: string
+          paid_amount: number
+          product_code: string
+          product_id: string
+          purchase_price: number
+          shop_id: string
+          storage: string
+          supplier_id: string
+          supplier_payment: string
+        }[]
       }
     }
     Enums: {
