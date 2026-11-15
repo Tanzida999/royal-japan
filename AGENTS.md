@@ -35,5 +35,5 @@
 - Active register state clears on user/shop changes; held phone reservations use audited RPCs and product-write guards, release at the exact timestamp deadline, and hourly SQL cleanup persists expiry history.
 - Accessories and custom sales use pos_sale_lines alongside phone sales; combined summaries retain phone-only cost/profit accounting to avoid inventing accessory costs.
 - Shared receipts use high-entropy bearer links and a narrow public RPC projection excluding customer contacts, staff identities, IMEIs and internal identifiers.
-- Register cash writes use shop-authorized RPCs; session locks serialize close with receipts, denomination counts are server-calculated, and checks/movements/close snapshots are immutable for auditable differences.
+- Cash Check is retired from app routes and queries; retain cash tables and immutable history, but receipts must not use the historical closed-register trigger so checkout stays independent of cash sessions.
 - All signed-in pages share the authenticated layout, current-shop header and app-container; RegisterShell supplies only page titles/actions and uses the same container for its footer, preventing page-specific navigation and width drift.

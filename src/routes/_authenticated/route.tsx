@@ -54,7 +54,6 @@ function Layout() {
     { to: "/add", label: "Add Product" },
     { to: "/stock", label: "Stock" },
     { to: "/sales", label: "Sales History" },
-    { to: "/cash-check", label: "Cash Check" },
     { to: "/customers", label: "Customers" },
     ...(me?.role === "owner" || me?.manager ? [{ to: "/pos-settings", label: "Settings" }] : []),
     { to: "/find", label: "Find in other shops" },

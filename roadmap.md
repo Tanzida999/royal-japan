@@ -1,3 +1,10 @@
+# English-only interface and Cash Check removal
+- [x] English labels throughout POS, navigation and receipts; preserve yen and stored Japanese data
+- [x] Remove Cash Check page, links, tile, dashboard reads and alerts; preserve tables/history
+- [x] Remove historical closed-register restriction from checkout
+- [x] 63 tests pass; receipt cash guard removed, cash tables retained; desktop/mobile sign-in and retired page checked
+- [ ] Real-account POS and Home read-back — external Supabase has no managed sign-in session
+
 # Requested additions
 - [x] Consistent shared header/navigation, blue controls, aligned page widths and Home tiles
 - [x] 88 isolated sample-page checks at 1440, 1024, 768 and 390px; no page overflow or runtime errors, hamburger navigation checked
@@ -5,7 +12,7 @@
 - [x] Shop register sessions, reasoned cash in/out, denomination checks and immutable printable close reports
 - [x] Owner close-report visibility and nonzero cash-difference dashboard alerts; audit all actions
 - [x] 61 tests, active hourly SQL expiry job, policy/trigger inspection and signed-out desktop/mobile checks
-- [ ] Signed-in held-sale reservation/cancel/resume and cash open/movement/check/close read-back — external Supabase has no available managed test session
+- [ ] Signed-in held-sale reservation/cancel/resume read-back — external Supabase has no available managed test session; Cash Check is retired
 - [x] Japanese-style POS home and touch-friendly sale, cart, payment, and completion screens
 - [x] Shop-scoped accessories, customers, held sales, cash check, and POS settings
 - [x] Atomic mixed-item checkout, discount permissions, split payments, inclusive tax, receipts, and audit logging

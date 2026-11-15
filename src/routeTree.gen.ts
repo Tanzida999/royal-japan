@@ -17,7 +17,6 @@ import { Route as AuthenticatedAccountRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedActivityRouteImport } from './routes/_authenticated/activity'
 import { Route as AuthenticatedAddRouteImport } from './routes/_authenticated/add'
 import { Route as AuthenticatedCartRouteImport } from './routes/_authenticated/cart'
-import { Route as AuthenticatedCashCheckRouteImport } from './routes/_authenticated/cash-check'
 import { Route as AuthenticatedCompletedRouteImport } from './routes/_authenticated/completed'
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
@@ -75,11 +74,6 @@ const AuthenticatedAddRoute = AuthenticatedAddRouteImport.update({
 const AuthenticatedCartRoute = AuthenticatedCartRouteImport.update({
   id: '/cart',
   path: '/cart',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedCashCheckRoute = AuthenticatedCashCheckRouteImport.update({
-  id: '/cash-check',
-  path: '/cash-check',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedCompletedRoute = AuthenticatedCompletedRouteImport.update({
@@ -189,7 +183,6 @@ export interface FileRoutesByFullPath {
   '/activity': typeof AuthenticatedActivityRoute
   '/add': typeof AuthenticatedAddRoute
   '/cart': typeof AuthenticatedCartRoute
-  '/cash-check': typeof AuthenticatedCashCheckRoute
   '/completed': typeof AuthenticatedCompletedRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -218,7 +211,6 @@ export interface FileRoutesByTo {
   '/activity': typeof AuthenticatedActivityRoute
   '/add': typeof AuthenticatedAddRoute
   '/cart': typeof AuthenticatedCartRoute
-  '/cash-check': typeof AuthenticatedCashCheckRoute
   '/completed': typeof AuthenticatedCompletedRoute
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -249,7 +241,6 @@ export interface FileRoutesById {
   '/_authenticated/activity': typeof AuthenticatedActivityRoute
   '/_authenticated/add': typeof AuthenticatedAddRoute
   '/_authenticated/cart': typeof AuthenticatedCartRoute
-  '/_authenticated/cash-check': typeof AuthenticatedCashCheckRoute
   '/_authenticated/completed': typeof AuthenticatedCompletedRoute
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
@@ -280,7 +271,6 @@ export interface FileRouteTypes {
     | '/activity'
     | '/add'
     | '/cart'
-    | '/cash-check'
     | '/completed'
     | '/customers'
     | '/dashboard'
@@ -309,7 +299,6 @@ export interface FileRouteTypes {
     | '/activity'
     | '/add'
     | '/cart'
-    | '/cash-check'
     | '/completed'
     | '/customers'
     | '/dashboard'
@@ -339,7 +328,6 @@ export interface FileRouteTypes {
     | '/_authenticated/activity'
     | '/_authenticated/add'
     | '/_authenticated/cart'
-    | '/_authenticated/cash-check'
     | '/_authenticated/completed'
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
@@ -426,13 +414,6 @@ declare module '@tanstack/react-router' {
       path: '/cart'
       fullPath: '/cart'
       preLoaderRoute: typeof AuthenticatedCartRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/cash-check': {
-      id: '/_authenticated/cash-check'
-      path: '/cash-check'
-      fullPath: '/cash-check'
-      preLoaderRoute: typeof AuthenticatedCashCheckRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/completed': {
@@ -590,7 +571,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedActivityRoute: typeof AuthenticatedActivityRoute
   AuthenticatedAddRoute: typeof AuthenticatedAddRoute
   AuthenticatedCartRoute: typeof AuthenticatedCartRoute
-  AuthenticatedCashCheckRoute: typeof AuthenticatedCashCheckRoute
   AuthenticatedCompletedRoute: typeof AuthenticatedCompletedRoute
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
@@ -614,7 +594,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedActivityRoute: AuthenticatedActivityRoute,
   AuthenticatedAddRoute: AuthenticatedAddRoute,
   AuthenticatedCartRoute: AuthenticatedCartRoute,
-  AuthenticatedCashCheckRoute: AuthenticatedCashCheckRoute,
   AuthenticatedCompletedRoute: AuthenticatedCompletedRoute,
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,

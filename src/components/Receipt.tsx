@@ -36,7 +36,7 @@ export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData;
       {receipt.address && <div className="text-center text-xs">{receipt.postal_code} {receipt.address}</div>}
       {receipt.phone && <div className="text-center text-xs">Tel: {receipt.phone}</div>}
       <div className="text-center text-xs">Receipt {receipt.receipt_no}</div>
-      {receipt.addressee && <div className="space-y-2 border-y py-2"><div className="text-center text-lg font-bold">領収書</div><div>{receipt.addressee} 様</div><div>但し書き: {receipt.purpose || "商品代として"}</div></div>}
+      {receipt.addressee && <div className="space-y-2 border-y py-2"><div className="text-center text-lg font-bold">Receipt</div><div>{receipt.addressee}</div><div>Purpose: {receipt.purpose || "For goods"}</div></div>}
       <div className="text-xs">{receipt.date}</div>
       <hr />
       {receipt.items ? receipt.items.map((i,index) => <div key={`${i.imei}-${index}`} className="space-y-1 border-b pb-2"><div>{i.model} {i.storage} {i.color}</div>{i.imei && <div className="text-xs">IMEI: {i.imei}</div>}{i.quantity && <div className="text-xs">{i.quantity} × {yen(i.unit_price ?? i.price)}</div>}<div className="text-right">{yen(i.price)}</div></div>) : <><div>{receipt.item}</div><div className="text-xs">IMEI: {receipt.imei}</div></>}
