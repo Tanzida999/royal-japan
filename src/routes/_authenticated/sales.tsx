@@ -1,6 +1,5 @@
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
-import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -107,14 +106,12 @@ function Sales() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="page-toolbar">
         <h1 className="mr-auto text-2xl font-bold">Sales History ({filtered.length})</h1>
         <Input className="w-full sm:w-56" placeholder="Search receipt, IMEI, customer…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <Input type="date" className="w-full sm:w-40" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
         <Input type="date" className="w-full sm:w-40" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" />
-        {isOwner && (
-          <ShopSelect />
-        )}
+
       </div>
       <p className="text-sm text-muted-foreground">Today: <span className="font-semibold text-foreground">{today.count} sales · {today.phones} phones · {yen(today.amount)}</span></p>
       {salesError && <p role="alert" className="text-destructive">Could not load sales history</p>}

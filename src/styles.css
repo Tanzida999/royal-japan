@@ -66,11 +66,11 @@
 }
 
 :root {
-  --register: oklch(0.53 0.19 255);
+  --register: var(--primary);
   --register-foreground: oklch(1 0 0);
-  --sale: oklch(0.49 0.15 148);
+  --sale: var(--primary);
   --sale-foreground: oklch(0.99 0 0);
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
@@ -106,9 +106,9 @@
 }
 
 .dark {
-  --register: oklch(0.67 0.15 255);
+  --register: var(--primary);
   --register-foreground: oklch(0.15 0 0);
-  --sale: oklch(0.49 0.15 148);
+  --sale: var(--primary);
   --sale-foreground: oklch(0.99 0 0);
   --background: oklch(0.129 0.042 264.695);
   --foreground: oklch(0.984 0.003 247.858);
@@ -156,9 +156,9 @@
 }
 
 :root {
-  --primary: oklch(0.52 0.13 190);
-  --primary-foreground: oklch(0.99 0 0);
-  --ring: oklch(0.52 0.13 190);
+  --primary: #1565C0;
+  --primary-foreground: oklch(1 0 0);
+  --ring: var(--primary);
 }
 
 @utility field {
@@ -171,8 +171,33 @@
   font-size: 0.875rem;
 }
 
-.register { --primary: var(--register); --primary-foreground: var(--register-foreground); --ring: var(--register); letter-spacing: 0; }
+.register { letter-spacing: 0; }
 .register input { min-width: 0; }
+
+.app-container {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 16px;
+}
+.app-layout main > * { min-width: 0; }
+.app-layout h1, .app-layout h2, .app-layout label { overflow-wrap: anywhere; }
+.app-layout input, .app-layout select, .app-layout textarea { min-width: 0; max-width: 100%; }
+.app-layout main .rounded-xl, .app-layout main .rounded-2xl { border-radius: var(--radius); }
+.app-layout main .overflow-x-auto { max-width: 100%; }
+.app-layout table { width: 100%; }
+.page-toolbar { display: grid; grid-template-columns: minmax(0, 1fr); align-items: center; gap: 12px; }
+.page-toolbar > * { min-width: 0; }
+.page-toolbar h1 { margin-right: 0; }
+.page-toolbar > input, .page-toolbar > select { width: 100%; }
+@media (min-width: 640px) {
+  .app-container { padding-inline: 24px; }
+}
+@media (min-width: 1024px) {
+  .page-toolbar { display: flex; flex-wrap: wrap; }
+  .page-toolbar > h1, .page-toolbar > div:first-child:has(h1) { margin-right: auto; }
+  .page-toolbar > input, .page-toolbar > select { width: auto; }
+}
 
 @media print {
   body * { visibility: hidden; }

@@ -106,8 +106,9 @@ function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <form onSubmit={submit} className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
-        <h1 className="text-2xl font-bold">Invite staff</h1>
+      <h1 className="text-2xl font-bold">Staff</h1>
+      <form onSubmit={submit} className="space-y-4 border-b pb-6">
+        <h2 className="text-lg font-semibold">Invite staff</h2>
         <p className="text-sm text-muted-foreground">They get an email link to set their own password.</p>
         <div className="grid gap-4 sm:grid-cols-2">
           <F label="Name"><Input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} /></F>

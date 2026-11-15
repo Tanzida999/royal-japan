@@ -1,7 +1,6 @@
 import { logEvent } from "@/lib/audit";
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
-import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -77,11 +76,11 @@ function Stock() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="page-toolbar">
         <h1 className="mr-auto text-2xl font-bold">Stock ({filtered.length})</h1>
         <Input className="w-full sm:w-64" placeholder="Search code, IMEI, model…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={hasTracking} onChange={(e) => setHasTracking(e.target.checked)} />Has tracking</label>
-        <ShopSelect />
+
       </div>
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">

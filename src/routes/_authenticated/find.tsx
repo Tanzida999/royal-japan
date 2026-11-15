@@ -60,7 +60,7 @@ function Find() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="page-toolbar">
         <h1 className="mr-auto text-2xl font-bold">Find in other shops ({list.length})</h1>
         <Input className="w-full sm:w-72" placeholder="Search model or IMEI…" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>

@@ -314,8 +314,8 @@ function AddProduct() {
   );
 
   return (
-    <div className="space-y-4 rounded-xl border bg-card p-4 sm:p-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <div className="space-y-4">
+      <div className="page-toolbar">
         <h1 className="mr-auto text-2xl font-bold">Add Product</h1>
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" checked={bulk} onChange={(e) => { setBulk(e.target.checked); setError(""); }} />

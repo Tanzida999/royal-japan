@@ -82,7 +82,7 @@ function StockCheck() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="page-toolbar">
         <h1 className="mr-auto text-2xl font-bold">Stock Check</h1>
         <select className="field w-full sm:w-56" value={shop} onChange={(e) => reset(e.target.value)}>
           <option value="">Pick a shop</option>

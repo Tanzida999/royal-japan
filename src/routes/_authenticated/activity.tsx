@@ -75,7 +75,7 @@ function Activity() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="page-toolbar">
         <h1 className="mr-auto text-2xl font-bold">Activity</h1>
         <Button variant={tab === "all" ? "default" : "outline"} size="sm" onClick={() => setTab("all")}>All activity</Button>
         <Button variant={tab === "login" ? "default" : "outline"} size="sm" onClick={() => setTab("login")}>Login history</Button>

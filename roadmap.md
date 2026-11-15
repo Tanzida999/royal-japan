@@ -1,4 +1,6 @@
 # Requested additions
+- [x] Consistent shared header/navigation, blue controls, aligned page widths and Home tiles
+- [x] 88 isolated sample-page checks at 1440, 1024, 768 and 390px; no page overflow or runtime errors, hamburger navigation checked
 - [x] Held-sale names/notes, atomic phone reservations, reasoned cancellation and automatic 24-hour expiry
 - [x] Shop register sessions, reasoned cash in/out, denomination checks and immutable printable close reports
 - [x] Owner close-report visibility and nonzero cash-difference dashboard alerts; audit all actions
@@ -23,6 +25,7 @@
 - [x] 31 passing rule/routing tests and signed-in browser checks, including cart checkout and transfer lifecycle
 
 ## Verification limits
+- Layout checks use isolated sample responses, not real signed-in accounts; authenticated production-data checks remain unavailable with external Supabase. All 61 existing tests pass.
 - Close reports include refunds as ¥0 because the app has no refund flow or refund records; no refund functionality was invented. Hardware printing and signed-in cash/reservation flows remain unverified.
 - Register functions intentionally remain callable by authorized signed-in users; shared receipts intentionally allow bearer-link reads of a narrow non-sensitive projection. Reviewed linter flags reflect this access model. Existing leaked-password protection is disabled.
 - No separate purchase-batches page or table exists; existing bulk purchase grouping uses the same supplier dropdown and linked phone records.

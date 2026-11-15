@@ -1,7 +1,6 @@
 import { SecurityAlerts } from "@/components/SecurityAlerts";
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
-import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { TrackButton } from "@/components/TrackingEditor";
 import { useQuery } from "@tanstack/react-query";
@@ -117,7 +116,7 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end gap-2">
+      <div className="page-toolbar">
         <h1 className="mr-auto text-2xl font-bold">Owner Dashboard</h1>
         <select className="field w-28" value={year} onChange={(e) => setYear(e.target.value)} aria-label="Year">
           {years.map((y) => <option key={y}>{y}</option>)}
@@ -126,7 +125,7 @@ function Dashboard() {
           <option value="">Whole year</option>
           {MONTHS.map((m, i) => <option key={m} value={String(i + 1).padStart(2, "0")}>{m}</option>)}
         </select>
-        <ShopSelect />
+
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Card title="Sold today" value={String(totals.today.sold)} />

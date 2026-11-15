@@ -1,6 +1,5 @@
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
-import { ShopSelect } from "@/components/ShopSelect";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
@@ -116,9 +115,6 @@ function Transfers() {
               <option value="">All statuses</option>
               {STATUSES.map((s) => <option key={s}>{s}</option>)}
             </select>
-            {isOwner && (
-              <ShopSelect />
-            )}
           </div>
         }
       >
