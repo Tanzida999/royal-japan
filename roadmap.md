@@ -1,4 +1,8 @@
 # Requested additions
+- [ ] Japanese-style POS home and touch-friendly sale, cart, payment, and completion screens
+- [ ] Shop-scoped accessories, customers, held sales, cash check, and POS settings
+- [ ] Atomic mixed-item checkout, discount permissions, split payments, inclusive tax, receipts, and audit logging
+- [ ] Tests and desktop/mobile verification; authenticated end-to-end verification requires an available external Supabase session
 - [x] Supplier directory, active supplier selection and legacy purchase linking
 - [x] Owner/manager supplier access, shop-scoped sales and receipt security
 - [x] New Sale / Sales History labels and today's shop totals
