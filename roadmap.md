@@ -1,4 +1,8 @@
 # Requested additions
+- [ ] Held-sale names/notes, atomic phone reservations, reasoned cancellation and automatic 24-hour expiry
+- [ ] Shop register sessions, reasoned cash in/out, denomination checks and immutable printable close reports
+- [ ] Owner close-report visibility and nonzero cash-difference dashboard alerts; audit all actions
+- [ ] Reservation/cash rule tests and available browser/database verification
 - [x] Japanese-style POS home and touch-friendly sale, cart, payment, and completion screens
 - [x] Shop-scoped accessories, customers, held sales, cash check, and POS settings
 - [x] Atomic mixed-item checkout, discount permissions, split payments, inclusive tax, receipts, and audit logging
