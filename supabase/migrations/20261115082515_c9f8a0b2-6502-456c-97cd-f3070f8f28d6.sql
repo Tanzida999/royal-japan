@@ -1,0 +1,32 @@
+DO $$ DECLARE actor uuid; sh uuid; code text; model uuid; s public.suppliers; result jsonb; phone uuid; n bigint; BEGIN
+ SELECT p.id,p.shop_id,p.staff_code INTO actor,sh,code FROM profiles p JOIN user_roles r ON r.user_id=p.id WHERE r.role='staff' AND NOT p.disabled LIMIT 1;
+ IF actor IS NULL THEN RAISE EXCEPTION 'Staff verification requires a staff account'; END IF;
+ BEGIN
+ PERFORM set_config('request.jwt.claim.sub',actor::text,true);
+ s:=save_supplier(NULL,jsonb_build_object('name','Supplier permission verification '||gen_random_uuid(),'phone','0312345678'));
+ IF s.created_by IS DISTINCT FROM actor THEN RAISE EXCEPTION 'Incorrect supplier creator'; END IF;
+ s:=save_supplier(s.id,to_jsonb(s)||jsonb_build_object('contact_person','Staff edit verification'));
+ IF s.contact_person<>'Staff edit verification' THEN RAISE EXCEPTION 'Staff edit failed'; END IF;
+ result:=delete_supplier(s.id);
+ IF result<>jsonb_build_object('deleted',true,'linked_count',0) OR EXISTS(SELECT 1 FROM suppliers WHERE id=s.id) THEN RAISE EXCEPTION 'Unused deletion failed'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM audit_log WHERE table_name='suppliers' AND record_id=s.id::text AND action='delete' AND user_id=actor AND old_values->>'contact_person'='Staff edit verification') THEN RAISE EXCEPTION 'Deletion actor audit failed'; END IF;
+ s:=save_supplier(NULL,jsonb_build_object('name','Linked supplier verification '||gen_random_uuid()));
+ SELECT id INTO model FROM models LIMIT 1;
+ IF sh IS NULL OR model IS NULL THEN RAISE EXCEPTION 'Staff shop and model required'; END IF;
+ INSERT INTO products(product_code,imei,model_id,color,storage,condition,selling_price,shop_id,current_shop_id,status,created_by,staff_code,supplier_id) VALUES('SUP-VERIFY-'||gen_random_uuid(),'999'||lpad((floor(random()*1000000000000)::bigint)::text,12,'0'),model,'Test','128GB','New',1000,sh,sh,'in_stock',actor,code,s.id) RETURNING id INTO phone;
+ result:=delete_supplier(s.id);
+ IF result<>jsonb_build_object('deleted',false,'linked_count',1) OR NOT EXISTS(SELECT 1 FROM suppliers WHERE id=s.id) THEN RAISE EXCEPTION 'Linked deletion protection failed'; END IF;
+ s:=save_supplier(s.id,to_jsonb(s)||jsonb_build_object('status','inactive'));
+ IF NOT EXISTS(SELECT 1 FROM products WHERE id=phone AND supplier_id=s.id) THEN RAISE EXCEPTION 'Deactivation lost product history'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM audit_log WHERE record_id=s.id::text AND action='deactivate' AND user_id=actor) THEN RAISE EXCEPTION 'Deactivation actor audit failed'; END IF;
+ BEGIN PERFORM supplier_purchases(); RAISE EXCEPTION 'Staff finance access was allowed'; EXCEPTION WHEN OTHERS THEN IF SQLERRM='Staff finance access was allowed' THEN RAISE; END IF; IF SQLERRM<>'Only owners and managers can view supplier purchases' THEN RAISE; END IF; END;
+ EXECUTE 'SET LOCAL ROLE authenticated';
+ SELECT count(*) INTO n FROM suppliers WHERE id=s.id;
+ IF n<>1 THEN RAISE EXCEPTION 'Staff cannot read supplier contacts'; END IF;
+ SELECT count(*) INTO n FROM product_costs;
+ IF n<>0 THEN RAISE EXCEPTION 'Staff can read saved costs'; END IF;
+ EXECUTE 'RESET ROLE';
+ RAISE EXCEPTION USING ERRCODE='ZX001',MESSAGE='Supplier verification succeeded; roll back verification records';
+ EXCEPTION WHEN SQLSTATE 'ZX001' THEN NULL;
+ END;
+END $$;

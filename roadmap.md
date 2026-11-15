@@ -1,7 +1,8 @@
 # Supplier permission changes
-- [ ] All signed-in roles can view contacts, manage suppliers and quick-add; staff financial data stays hidden
-- [ ] Database-enforced unused-supplier deletion / linked-supplier deactivation with actor audit
-- [ ] Permission/deletion tests and database verification; real-account browser checks depend on external sign-in availability
+- [x] All signed-in roles can view contacts, manage suppliers and quick-add; staff financial data stays hidden
+- [x] Database-enforced unused-supplier deletion / linked-supplier deactivation with actor audit
+- [x] 66 tests pass; transactional staff creation/edit/delete/deactivation, actor audit and finance denial verified in database; verification records rolled back
+- [ ] Real-account supplier browser read-back — external Supabase has no managed sign-in session; desktop/mobile sign-in protection checked
 
 # English-only interface and Cash Check removal
 - [x] English labels throughout POS, navigation and receipts; preserve yen and stored Japanese data
