@@ -1,0 +1,11 @@
+import {queryOptions} from '@tanstack/react-query';
+import {supabase} from '@/integrations/supabase/client';
+import {paged} from './register-data';
+import type {Json} from '@/integrations/supabase/types';
+export type CashSummary={shop_name:string;day:string;opening_cash:number;payments:Record<string,number>;sales_total:number;sales_count:number;discounts:number;refunds:number;cash_in:number;cash_out:number;cash_sales:number;expected:number;counted?:number;difference?:number;closed_by?:string;closed_at?:string};
+export const cashQuery=(user:string,shop:string,day:string)=>queryOptions({queryKey:['cash-check',user,shop,day],enabled:!!user,queryFn:async()=>{
+ const reports=await paged(async start=>{let q=supabase.from('cash_checks').select('*,shops(name)').eq('kind','close').eq('day',day).order('created_at',{ascending:false}).order('id').range(start,start+999);if(shop)q=q.eq('shop_id',shop);const {data,error}=await q;if(error)throw error;return data;});
+ if(!shop)return {summary:null,session:null,movements:[],checks:[],reports};
+ const [summary,session,movements,checks]=await Promise.all([supabase.rpc('register_summary',{_shop:shop,_day:day}),supabase.from('register_sessions').select('*').eq('shop_id',shop).eq('day',day).maybeSingle(),paged(async start=>{const {data,error}=await supabase.from('cash_movements').select('*,register_sessions!inner(day)').eq('shop_id',shop).eq('register_sessions.day',day).order('created_at',{ascending:false}).order('id').range(start,start+999);if(error)throw error;return data;}),paged(async start=>{const {data,error}=await supabase.from('cash_checks').select('*').eq('shop_id',shop).eq('day',day).order('created_at',{ascending:false}).order('id').range(start,start+999);if(error)throw error;return data;})]);if(summary.error)throw summary.error;if(session.error)throw session.error;return {summary:summary.data as unknown as CashSummary,session:session.data,movements,checks,reports};
+}});
+export async function cashAction(shop:string,day:string,action:string,data:Json){const r=await supabase.rpc('register_action',{_shop:shop,_day:day,_action:action,_data:data});if(r.error)throw r.error;return r.data;}
