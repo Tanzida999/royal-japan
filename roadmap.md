@@ -1,4 +1,8 @@
 # Requested additions
+- [ ] Supplier directory, active supplier selection and legacy purchase linking
+- [ ] Owner/manager supplier access, shop-scoped sales and receipt security
+- [ ] New Sale / Sales History labels and today's shop totals
+- [ ] Rule tests and end-to-end verification
 - [x] Shop profiles, private logo uploads, and shared current-shop selection
 - [x] Atomic multi-phone checkout and complete thermal/A4 receipts with reprint
 - [x] Scanner-friendly IMEI validation and camera scanning; permission failure checked, physical-camera decoding unverified
