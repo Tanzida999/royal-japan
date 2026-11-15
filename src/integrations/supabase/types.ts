@@ -128,11 +128,15 @@ export type Database = {
           created_at: string
           created_by: string
           day: string
+          denominations: Json
           difference: number
           expected: number
           id: string
+          kind: string
           opening_cash: number
+          session_id: string | null
           shop_id: string
+          summary: Json
           updated_at: string
         }
         Insert: {
@@ -141,11 +145,15 @@ export type Database = {
           created_at?: string
           created_by: string
           day: string
+          denominations?: Json
           difference: number
           expected: number
           id?: string
+          kind?: string
           opening_cash: number
+          session_id?: string | null
           shop_id: string
+          summary?: Json
           updated_at?: string
         }
         Update: {
@@ -154,16 +162,78 @@ export type Database = {
           created_at?: string
           created_by?: string
           day?: string
+          denominations?: Json
           difference?: number
           expected?: number
           id?: string
+          kind?: string
           opening_cash?: number
+          session_id?: string | null
+          shop_id?: string
+          summary?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_checks_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "register_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_checks_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_movements: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string
+          id: string
+          kind: string
+          reason: string
+          session_id: string
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by: string
+          id?: string
+          kind: string
+          reason: string
+          session_id: string
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string
+          id?: string
+          kind?: string
+          reason?: string
+          session_id?: string
           shop_id?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: "cash_checks_shop_id_fkey"
+            foreignKeyName: "cash_movements_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "register_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_movements_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
@@ -215,33 +285,97 @@ export type Database = {
           },
         ]
       }
+      held_sale_phones: {
+        Row: {
+          created_at: string
+          held_id: string
+          id: string
+          product_id: string
+          released_at: string | null
+          shop_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          held_id: string
+          id?: string
+          product_id: string
+          released_at?: string | null
+          shop_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          held_id?: string
+          id?: string
+          product_id?: string
+          released_at?: string | null
+          shop_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "held_sale_phones_held_id_fkey"
+            columns: ["held_id"]
+            isOneToOne: false
+            referencedRelation: "held_sales"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "held_sale_phones_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "held_sale_phones_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       held_sales: {
         Row: {
+          cancel_reason: string | null
           cart: Json
           created_at: string
           created_by: string
+          expires_at: string
           id: string
           name: string
+          note: string
+          resolved_by: string | null
           shop_id: string
           status: string
           updated_at: string
         }
         Insert: {
+          cancel_reason?: string | null
           cart: Json
           created_at?: string
           created_by: string
+          expires_at?: string
           id?: string
           name?: string
+          note?: string
+          resolved_by?: string | null
           shop_id: string
           status?: string
           updated_at?: string
         }
         Update: {
+          cancel_reason?: string | null
           cart?: Json
           created_at?: string
           created_by?: string
+          expires_at?: string
           id?: string
           name?: string
+          note?: string
+          resolved_by?: string | null
           shop_id?: string
           status?: string
           updated_at?: string
@@ -650,6 +784,53 @@ export type Database = {
           },
           {
             foreignKeyName: "receipts_shop_id_fkey"
+            columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      register_sessions: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          day: string
+          id: string
+          opened_by: string
+          opening_cash: number
+          shop_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          day: string
+          id?: string
+          opened_by: string
+          opening_cash: number
+          shop_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          day?: string
+          id?: string
+          opened_by?: string
+          opening_cash?: number
+          shop_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "register_sessions_shop_id_fkey"
             columns: ["shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
@@ -1218,6 +1399,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      expire_held_sales: { Args: never; Returns: number }
       expire_transfer_requests: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -1247,6 +1429,7 @@ export type Database = {
         Returns: undefined
       }
       my_shop_id: { Args: never; Returns: string }
+      phone_reserved: { Args: { _product: string }; Returns: boolean }
       pos_shop_access: { Args: { _shop: string }; Returns: boolean }
       receive_transfer: {
         Args: { _code: string; _transfer_id: string }
@@ -1274,6 +1457,11 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      register_action: {
+        Args: { _action: string; _data: Json; _day: string; _shop: string }
+        Returns: Json
+      }
+      register_summary: { Args: { _day: string; _shop: string }; Returns: Json }
       request_device: { Args: never; Returns: string }
       request_transfer_to_shop: {
         Args: { _product_id: string; _to_shop_id: string }
@@ -1300,6 +1488,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      resolve_held_sale: {
+        Args: { _cancel: boolean; _id: string; _reason: string }
+        Returns: Json
       }
       respond_transfer: {
         Args: { _accept: boolean; _reason: string; _transfer_id: string }
