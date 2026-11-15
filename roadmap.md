@@ -1,8 +1,9 @@
 # Requested additions
-- [ ] Supplier directory, active supplier selection and legacy purchase linking
-- [ ] Owner/manager supplier access, shop-scoped sales and receipt security
-- [ ] New Sale / Sales History labels and today's shop totals
-- [ ] Rule tests and end-to-end verification
+- [x] Supplier directory, active supplier selection and legacy purchase linking
+- [x] Owner/manager supplier access, shop-scoped sales and receipt security
+- [x] New Sale / Sales History labels and today's shop totals
+- [x] 47 tests, database policy inspection and signed-out page checks
+- [ ] Signed-in supplier creation/edit/deactivation, purchase intake and sales/receipt verification — external Supabase has no available managed test session
 - [x] Shop profiles, private logo uploads, and shared current-shop selection
 - [x] Atomic multi-phone checkout and complete thermal/A4 receipts with reprint
 - [x] Scanner-friendly IMEI validation and camera scanning; permission failure checked, physical-camera decoding unverified
@@ -12,6 +13,7 @@
 - [x] 31 passing rule/routing tests and signed-in browser checks, including cart checkout and transfer lifecycle
 
 ## Verification limits
+- No separate purchase-batches page or table exists; existing bulk purchase grouping uses the same supplier dropdown and linked phone records.
 - Physical cameras and printers require the user's hardware; print views and camera fallback are checked.
 - Real shop contact details and logos were not supplied and remain blank; no invented shop details.
 - Test records are retained under Checkout verification / Transfer verification; no existing phones were sold or deleted.- [x] Add Product: staff code (scanner/camera/typing), condition photos, shipping tracking; shown on detail, stock, transfers, sell, dashboard

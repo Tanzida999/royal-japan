@@ -35,7 +35,7 @@ export const meQuery = queryOptions({
       email: u.user.email ?? "",
       name: p?.name ?? u.user.email ?? "",
       shop_id: p?.shop_id ?? null,
-      role: roles.includes("owner") ? "owner" : roles.includes("staff") ? "staff" : null,
+      role: roles.includes("owner") ? "owner" : (roles.includes("staff") || roles.includes("manager")) ? "staff" : null,
       manager: roles.includes("manager"),
       disabled: p?.disabled ?? false,
     };

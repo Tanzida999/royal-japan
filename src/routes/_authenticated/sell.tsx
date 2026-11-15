@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { PRODUCT_SELECT, yen, type ProductRow } from "@/lib/app";
+import { PRODUCT_SELECT, yen, jstDate, meQuery, type ProductRow } from "@/lib/app";
 import { useCurrentShop } from "@/lib/shop-context";
 import { checkoutTotals, PAYMENTS, saleEligibility } from "@/lib/pos";
 import { receiptView } from "@/lib/receipt";
@@ -17,12 +17,16 @@ import { StaffScan } from "@/components/StaffScan";
 import { CameraScan } from "@/components/CameraScan";
 import { ShopSelect } from "@/components/ShopSelect";
 import { ProductPhotos } from "@/components/ProductPhotos";
+import { salesRowsQuery, todaySales } from "@/lib/sales-history";
 
-export const Route = createFileRoute("/_authenticated/sell")({ head: () => pageMeta("Sell — Mobile Shop Manager", "Scan phones into a cart and complete a shop sale with a printed receipt."), component: Sell });
+export const Route = createFileRoute("/_authenticated/sell")({ head: () => pageMeta("New Sale — Mobile Shop Manager", "Scan phones into a cart and complete a shop sale with a printed receipt."), component: Sell });
 type CartItem = { product: ProductRow; price: string };
 function Sell() {
   const qc = useQueryClient();
   const { shopId, shopName } = useCurrentShop();
+  const { data: me } = useQuery(meQuery);
+  const { data: sales = [] } = useQuery(salesRowsQuery(me?.id ?? "", shopId));
+  const today = todaySales(sales, shopId, jstDate(new Date()));
   const scanRef = useRef<HTMLInputElement>(null);
   const scanning = useRef(false);
   const [code, setCode] = useState("");
@@ -73,8 +77,9 @@ function Sell() {
       await Promise.all(["stock", "dashboard", "sales-list", "receipts", "find-products", "stock-check-products"].map(key => qc.invalidateQueries({ queryKey: [key] })));
     } catch (e) { setError(e instanceof Error ? e.message : "Sale was not saved"); } finally { setBusy(false); }
   }
-  if (receipt) return <div className="space-y-4"><Receipt receipt={receipt} format={format} /><ReceiptActions format={format} onFormat={setFormat} backLabel="New sale" onBack={() => { setReceipt(null); setPaid(""); setDiscount("0"); setCustomer(""); setCustomerPhone(""); setStaffCode(""); }} /></div>;
-  return <div className="space-y-4"><div className="flex flex-wrap items-center gap-3"><h1 className="mr-auto text-2xl font-bold">Sell · {shopName}</h1><ShopSelect /></div>
+  if (receipt) return <div className="space-y-4"><Receipt receipt={receipt} format={format} /><ReceiptActions format={format} onFormat={setFormat} backLabel="New Sale" onBack={() => { setReceipt(null); setPaid(""); setDiscount("0"); setCustomer(""); setCustomerPhone(""); setStaffCode(""); }} /></div>;
+  return <div className="space-y-4"><div className="flex flex-wrap items-center gap-3"><h1 className="mr-auto text-2xl font-bold">New Sale · {shopName}</h1><ShopSelect /></div>
+    <p className="text-sm text-muted-foreground">Today: <span className="font-semibold text-foreground">{today.count} sales · {today.phones} phones · {yen(today.amount)}</span></p>
     <form onSubmit={e => { e.preventDefault(); void lookup(code); }} className="space-y-2 rounded-xl border bg-card p-4 sm:p-6"><Label htmlFor="scan" className="text-lg font-bold">Scan barcode / IMEI</Label><div className="flex gap-2"><Input id="scan" ref={scanRef} value={code} onChange={e => setCode(e.target.value)} placeholder="Product code or IMEI" className="h-14 min-w-0 text-xl" autoComplete="off" autoFocus disabled={busy} /><Button type="submit" className="h-14" disabled={busy || !shopId}>Add to cart</Button></div><CameraScan onScan={c => { void lookup(c); }} /></form>
     {error && <p role="alert" className="rounded-md border border-destructive bg-destructive/10 p-3 font-semibold text-destructive">{error}</p>}
     <div className="overflow-x-auto rounded-xl border bg-card"><table className="w-full text-sm"><thead className="bg-muted text-left"><tr><th className="p-3">Phone ({cart.length})</th><th className="p-3">IMEI</th><th className="p-3">Price (¥)</th><th className="p-3"></th></tr></thead><tbody>{!cart.length && <tr><td colSpan={4} className="p-4 text-muted-foreground">Cart is empty</td></tr>}{cart.map(({ product: p, price }) => <tr key={p.id} className="border-t"><td className="p-3">{p.models?.brand} {p.models?.model}<div className="text-xs text-muted-foreground">{p.storage} · {p.color} · {p.condition} · {p.product_code}</div><div className="mt-1"><ProductPhotos productId={p.id} size="sm" /></div></td><td className="p-3 font-mono">{p.imei}</td><td className="p-3"><Input aria-label={`Price ${p.product_code}`} className="w-32" inputMode="numeric" value={price} disabled={busy} onChange={e => setCart(items => items.map(i => i.product.id === p.id ? { ...i, price: e.target.value.replace(/\D/g, "") } : i))} /></td><td className="p-3"><Button title="Remove from cart" aria-label={`Remove ${p.product_code}`} variant="ghost" size="icon" disabled={busy} onClick={() => setCart(items => items.filter(i => i.product.id !== p.id))}><Trash2 className="size-4" /></Button></td></tr>)}</tbody></table></div>

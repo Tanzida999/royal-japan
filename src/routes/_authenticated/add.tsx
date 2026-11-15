@@ -19,6 +19,8 @@ import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { TrackingFields } from "@/components/TrackingEditor";
 import { photoProblem } from "@/lib/product-extras";
 import { uploadProductPhotos } from "@/lib/product-photos";
+import { SupplierSelect } from "@/components/SupplierSelect";
+import { activeSuppliersQuery, supplierProblem } from "@/lib/supplier-directory";
 
 export const Route = createFileRoute("/_authenticated/add")({
   head: () => pageMeta("Add Product — Mobile Shop Manager", "Register individual phones or bulk purchases with verified staff badges."),
@@ -36,7 +38,7 @@ const schema = z.object({
   condition: z.enum(CONDITIONS),
   purchase_price: z.number().int().min(0, "Enter purchase price"),
   selling_price: z.number().int().min(0, "Enter selling price"),
-  supplier: z.string().trim().max(100),
+  supplier: z.string().uuid("Pick an active supplier"),
 });
 
 const emptyRow = (): BulkRow => ({
@@ -54,6 +56,7 @@ function AddProduct() {
   const { data: me } = useQuery(meQuery);
   const { data: shops = [] } = useQuery(shopsQuery);
   const { data: models = [] } = useQuery(modelsQuery);
+  const { data: activeSuppliers = [] } = useQuery(activeSuppliersQuery);
 
   const [bulk, setBulk] = useState(false);
   const { shopId, setShopId, isOwner } = useCurrentShop();
@@ -101,7 +104,7 @@ function AddProduct() {
   });
   const existing = new Set(existingImeis);
   const imeiError = imei ? imeiProblem(imei, existing) : "";
-  const rowStatus = validateBulkRows(rows, existing).map((st, i) => st !== "OK" ? st : photoProblem(rows[i]!.condition, rowPhotos[i]?.length ?? 0) || "OK");
+  const rowStatus = validateBulkRows(rows, existing).map((st, i) => st !== "OK" ? st : photoProblem(rows[i]?.condition ?? "New", rowPhotos[i]?.length ?? 0) || "OK");
   const photoError = photoProblem(condition, photos.length);
 
   function trackingOk() {
@@ -135,6 +138,8 @@ function AddProduct() {
     e.preventDefault();
     setError("");
     if (!staffCode) return setError("Scan your staff code first");
+    const supplierError = supplierProblem(supplier, activeSuppliers);
+    if (supplierError) return setError(supplierError);
     if (imeiError) return setError(imeiError);
     if (photoError) return setError(photoError);
     const te = trackingOk();
@@ -155,7 +160,7 @@ function AddProduct() {
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Invalid input");
     const v = parsed.data;
     setBusy(true);
-    const { data, error } = await supabase.rpc("add_product", {
+    const { data, error } = await supabase.rpc("add_product_with_supplier", {
       _shop_id: v.shop_id,
       _model_id: v.model_id,
       _imei: v.imei,
@@ -164,7 +169,7 @@ function AddProduct() {
       _condition: v.condition,
       _purchase_price: v.purchase_price,
       _selling_price: v.selling_price,
-      _supplier: v.supplier,
+      _supplier_id: v.supplier,
       _staff_code: staffCode,
       _supplier_payment: supPay,
       _paid_amount: supPay === "Partial" ? Number(paid) : (null as unknown as number),
@@ -196,6 +201,8 @@ function AddProduct() {
     setError("");
     if (!shopId) return setError("Pick a shop");
     if (!staffCode) return setError("Scan your staff code first");
+    const supplierError = supplierProblem(supplier, activeSuppliers);
+    if (supplierError) return setError(supplierError);
     const pe = paymentOk() || trackingOk();
     if (pe) return setError(pe);
     if (rows.length === 0) return setError("Add at least one phone");
@@ -207,9 +214,9 @@ function AddProduct() {
       purchase_price: Number(r.purchase_price),
       selling_price: Number(r.selling_price),
     }));
-    const { data, error } = await supabase.rpc("add_products_bulk", {
+    const { data, error } = await supabase.rpc("add_products_bulk_with_supplier", {
       _shop_id: shopId,
-      _supplier: supplier,
+      _supplier_id: supplier,
       _staff_code: staffCode,
       _supplier_payment: supPay,
       _paid_amount: supPay === "Partial" ? Number(paid) : (null as unknown as number),
@@ -288,7 +295,7 @@ function AddProduct() {
         </select>
       </Field>
       <Field label="Supplier">
-        <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} />
+        <SupplierSelect value={supplier} onChange={setSupplier} />
       </Field>
       <Field label="Supplier payment">
         <select className="field" value={supPay} onChange={(e) => setSupPay(e.target.value)}>
@@ -382,7 +389,7 @@ function AddProduct() {
             {photoError && <p className="text-xs text-destructive">{photoError}</p>}
           </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={busy || !staffCode || Boolean(imeiError)} className="w-full sm:w-auto">
+          <Button type="submit" disabled={busy || !staffCode || Boolean(imeiError) || Boolean(supplierProblem(supplier, activeSuppliers))} className="w-full sm:w-auto">
             {busy ? "Saving…" : "Save Product"}
           </Button>
         </form>
@@ -456,7 +463,7 @@ function AddProduct() {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRows((rs) => [...rs, emptyRow()])}>Add row</Button>
             <Button variant="outline" disabled={rows.length <= 1} onClick={() => { setRows((rs) => rs.slice(0, -1)); setRowPhotos((all) => { all[rows.length - 1]?.forEach((x) => URL.revokeObjectURL(x.url)); return all.slice(0, rows.length - 1); }); }}>Remove last row</Button>
-            <Button onClick={saveAll} disabled={busy || !staffCode}>{busy ? "Saving…" : `Save all (${rows.length})`}</Button>
+            <Button onClick={saveAll} disabled={busy || !staffCode || Boolean(supplierProblem(supplier, activeSuppliers))}>{busy ? "Saving…" : `Save all (${rows.length})`}</Button>
           </div>
         </div>
       )}

@@ -12,9 +12,10 @@ import { receiptView } from "@/lib/receipt";
 import { logEvent } from "@/lib/audit";
 import { ReceiptActions } from "@/components/ReceiptActions";
 import { Receipt, type ReceiptData } from "@/components/Receipt";
+import { salesRowsQuery, todaySales } from "@/lib/sales-history";
 
 export const Route = createFileRoute("/_authenticated/sales")({
-  head: () => pageMeta("Sales — Mobile Shop Manager", "Review shop sales and reprint complete customer receipts."),
+  head: () => pageMeta("Sales History — Mobile Shop Manager", "Review shop sales and reprint complete customer receipts."),
   component: Sales,
 });
 
@@ -53,18 +54,8 @@ function Sales() {
   const [format, setFormat] = useState<"thermal" | "a4">("thermal");
   const [reprintError, setReprintError] = useState("");
 
-  // Database only returns the staff member's own shop sales.
-  const { data: rows = [], isLoading } = useQuery({
-    queryKey: ["sales-list"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("sales")
-        .select("id, receipt_id, receipt_no, product_id, sale_price, customer_name, payment, shop_id, sold_by, staff_code, created_at, shops(name), products(product_code, imei, color, storage, condition, models(brand, model))")
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as unknown as SaleRow[];
-    },
-  });
+  const { data: rows = [], isLoading, error: salesError } = useQuery(salesRowsQuery(me?.id ?? "", shop));
+  const today = todaySales(rows, shop, jstDate(new Date()));
   const { data: people = {} } = useQuery({
     queryKey: ["people"],
     queryFn: async () => {
@@ -106,7 +97,7 @@ function Sales() {
     return (
       <div className="space-y-4">
         <Receipt receipt={receipt} format={format} />
-        <ReceiptActions format={format} onFormat={setFormat} backLabel="Back to sales" onBack={() => setReceipt(null)} onPrint={() => logEvent("receipt_reprinted", "receipts", receipt.receipt_no, { receipt_no: receipt.receipt_no })} />
+        <ReceiptActions format={format} onFormat={setFormat} backLabel="Back to Sales History" onBack={() => setReceipt(null)} onPrint={() => logEvent("receipt_reprinted", "receipts", receipt.receipt_no, { receipt_no: receipt.receipt_no })} />
       </div>
     );
   }
@@ -117,7 +108,7 @@ function Sales() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-2">
-        <h1 className="mr-auto text-2xl font-bold">Sales ({filtered.length})</h1>
+        <h1 className="mr-auto text-2xl font-bold">Sales History ({filtered.length})</h1>
         <Input className="w-full sm:w-56" placeholder="Search receipt, IMEI, customer…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <Input type="date" className="w-full sm:w-40" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
         <Input type="date" className="w-full sm:w-40" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" />
@@ -125,6 +116,8 @@ function Sales() {
           <ShopSelect />
         )}
       </div>
+      <p className="text-sm text-muted-foreground">Today: <span className="font-semibold text-foreground">{today.count} sales · {today.phones} phones · {yen(today.amount)}</span></p>
+      {salesError && <p role="alert" className="text-destructive">Could not load sales history</p>}
       {reprintError && <p role="alert" className="text-destructive">{reprintError}</p>}
       <div className="text-sm text-muted-foreground">
         Total: <span className="font-semibold text-foreground">{yen(total)}</span>

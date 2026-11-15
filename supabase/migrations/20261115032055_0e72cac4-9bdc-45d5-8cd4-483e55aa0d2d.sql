@@ -1,0 +1,6 @@
+REVOKE ALL ON FUNCTION public.link_purchase_supplier() FROM PUBLIC, anon, authenticated;
+COMMENT ON FUNCTION public.active_suppliers() IS 'Intentionally callable by authenticated staff: checks enabled role and returns only active IDs/names, never supplier details.';
+COMMENT ON FUNCTION public.save_supplier(uuid,jsonb) IS 'Intentionally callable by authenticated users: enforces owner/manager role before writes; trigger audits every change.';
+COMMENT ON FUNCTION public.supplier_purchases() IS 'Intentionally callable by authenticated users: enforces owner/manager and restricts managers to assigned shop.';
+COMMENT ON FUNCTION public.add_product_with_supplier(uuid,uuid,text,text,text,text,integer,integer,uuid,text,text,integer) IS 'Authenticated purchase intake: active supplier required; existing RPC verifies role, badge and assigned shop.';
+COMMENT ON FUNCTION public.add_products_bulk_with_supplier(uuid,uuid,text,text,integer,jsonb) IS 'Authenticated atomic bulk intake: active supplier required; existing RPC verifies role, badge and shop for every phone.';

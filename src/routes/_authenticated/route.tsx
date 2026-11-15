@@ -43,17 +43,17 @@ function Layout() {
   }
 
   const links = [
-    { to: "/sell", label: "Sell" },
+    { to: "/sell", label: "New Sale" },
     { to: "/add", label: "Add Product" },
     { to: "/stock", label: "Stock" },
-    { to: "/sales", label: "Sales" },
+    { to: "/sales", label: "Sales History" },
     { to: "/find", label: "Find in other shops" },
     { to: "/transfers", label: "Transfers" },
+    ...(me?.role === "owner" || me?.manager ? [{ to: "/suppliers", label: "Suppliers" }] : []),
     ...(me?.role === "owner"
       ? [
           { to: "/dashboard", label: "Dashboard" },
           { to: "/stock-check", label: "Stock Check" },
-          { to: "/suppliers", label: "Suppliers" },
           { to: "/staff", label: "Staff" },
           { to: "/activity", label: "Activity" },
         ]
@@ -70,8 +70,8 @@ function Layout() {
               <Link
                 key={l.to}
                 to={l.to}
-                className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"
-                activeProps={{ className: "bg-primary text-primary-foreground hover:bg-primary" }}
+                className={l.to === "/sell" ? "inline-flex min-h-11 items-center rounded-md bg-sale px-5 py-2 text-base font-bold text-sale-foreground hover:bg-sale/90" : "rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:bg-accent"}
+                activeProps={{ className: l.to === "/sell" ? "ring-2 ring-sale ring-offset-2" : "bg-primary text-primary-foreground hover:bg-primary" }}
               >
                 {l.label}
               </Link>
