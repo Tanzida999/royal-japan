@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { jstDate, meQuery, shopsQuery, yen } from "@/lib/app";
 import { buildAlerts } from "@/lib/alerts";
 import { paged } from "@/lib/register-data";
+import { cashDifferenceAlerts } from "@/lib/cash-rules";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => pageMeta("Owner Dashboard — Mobile Shop Manager", "Track shop stock, sales, profits and overdue transfer alerts."),
@@ -35,18 +36,19 @@ function Dashboard() {
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [sales, products, costs, transfers, otherSales] = await Promise.all([
+      const [sales, products, costs, transfers, otherSales, cashReports] = await Promise.all([
         supabase.from("sales").select("receipt_no, product_id, sale_price, shop_id, created_at"),
         supabase.from("products").select("id, product_code, shop_id, current_shop_id, status, created_at, storage, carrier, tracking_number, models(brand, model)"),
         supabase.from("product_costs").select("product_id, purchase_price"),
         supabase.from("transfers").select("product_id, from_shop_id, to_shop_id, status, accepted_at, reject_reason"),
         paged(async start => { const { data, error } = await supabase.from("pos_sale_lines").select("shop_id,sale_price,quantity,created_at").order("id").range(start,start+999); if(error)throw error; return data; }),
+        paged(async start => { const {data,error}=await supabase.from("cash_checks").select("id,shop_id,day,kind,difference").eq("kind","close").neq("difference",0).order("day",{ascending:false}).order("id").range(start,start+999);if(error)throw error;return data; }),
       ]);
       if (transfers.error) throw transfers.error;
       if (sales.error) throw sales.error;
       if (products.error) throw products.error;
       if (costs.error) throw costs.error;
-      return { sales: sales.data, products: products.data, costs: costs.data, transfers: transfers.data, otherSales };
+      return { sales: sales.data, products: products.data, costs: costs.data, transfers: transfers.data, otherSales, cashReports };
     },
   });
 
@@ -182,6 +184,7 @@ function Dashboard() {
       </div>
 
       <SecurityAlerts />
+      {cashDifferenceAlerts(data.cashReports).filter(r => inShop(r.shop_id)).length>0 && <section className="space-y-2 border-y py-4"><h2 className="font-semibold">Cash closing differences</h2>{cashDifferenceAlerts(data.cashReports).filter(r=>inShop(r.shop_id)).map(r=><div key={r.id} className="flex flex-wrap items-center gap-3 text-sm"><span className="text-destructive">{shopName(r.shop_id)} · {r.day} · Difference {yen(r.difference)}</span><Link to="/cash-check" className="text-primary underline">View close reports</Link></div>)}</section>}
 
       <div className="overflow-x-auto rounded-xl border bg-card">
         <table className="w-full text-sm">

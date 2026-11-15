@@ -1,8 +1,9 @@
 # Requested additions
-- [ ] Held-sale names/notes, atomic phone reservations, reasoned cancellation and automatic 24-hour expiry
-- [ ] Shop register sessions, reasoned cash in/out, denomination checks and immutable printable close reports
-- [ ] Owner close-report visibility and nonzero cash-difference dashboard alerts; audit all actions
-- [ ] Reservation/cash rule tests and available browser/database verification
+- [x] Held-sale names/notes, atomic phone reservations, reasoned cancellation and automatic 24-hour expiry
+- [x] Shop register sessions, reasoned cash in/out, denomination checks and immutable printable close reports
+- [x] Owner close-report visibility and nonzero cash-difference dashboard alerts; audit all actions
+- [x] 61 tests, active hourly SQL expiry job, policy/trigger inspection and signed-out desktop/mobile checks
+- [ ] Signed-in held-sale reservation/cancel/resume and cash open/movement/check/close read-back — external Supabase has no available managed test session
 - [x] Japanese-style POS home and touch-friendly sale, cart, payment, and completion screens
 - [x] Shop-scoped accessories, customers, held sales, cash check, and POS settings
 - [x] Atomic mixed-item checkout, discount permissions, split payments, inclusive tax, receipts, and audit logging
@@ -22,6 +23,7 @@
 - [x] 31 passing rule/routing tests and signed-in browser checks, including cart checkout and transfer lifecycle
 
 ## Verification limits
+- Close reports include refunds as ¥0 because the app has no refund flow or refund records; no refund functionality was invented. Hardware printing and signed-in cash/reservation flows remain unverified.
 - Register functions intentionally remain callable by authorized signed-in users; shared receipts intentionally allow bearer-link reads of a narrow non-sensitive projection. Reviewed linter flags reflect this access model. Existing leaked-password protection is disabled.
 - No separate purchase-batches page or table exists; existing bulk purchase grouping uses the same supplier dropdown and linked phone records.
 - Physical cameras and printers require the user's hardware; print views and camera fallback are checked.

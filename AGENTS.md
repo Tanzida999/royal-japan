@@ -32,6 +32,7 @@
 - Supplier directory writes use owner/manager-checked RPCs with audit triggers; manager purchase/dues reads use a shop-scoped RPC without widening owner-only cost table access.
 - New Sale and Sales History share paginated, user/shop-keyed sales queries and JST receipt totals; database policies independently enforce assigned-shop reads.
 - POS checkout uses complete_pos_sale for atomic mixed-item inventory, discount/price authorization, payment validation and idempotent receipts; legacy cart checkout delegates to it so alternate callers cannot bypass register rules.
-- Active register state is scoped to user and shop and clears on identity/location changes; held orders persist through shop-authorized RPCs without reserving stock.
+- Active register state clears on user/shop changes; held phone reservations use audited RPCs and product-write guards, release at the exact timestamp deadline, and hourly SQL cleanup persists expiry history.
 - Accessories and custom sales use pos_sale_lines alongside phone sales; combined summaries retain phone-only cost/profit accounting to avoid inventing accessory costs.
 - Shared receipts use high-entropy bearer links and a narrow public RPC projection excluding customer contacts, staff identities, IMEIs and internal identifiers.
+- Register cash writes use shop-authorized RPCs; session locks serialize close with receipts, denomination counts are server-calculated, and checks/movements/close snapshots are immutable for auditable differences.

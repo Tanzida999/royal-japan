@@ -1419,6 +1419,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      log_cash_report_print: { Args: { _id: string }; Returns: undefined }
       log_event: {
         Args: {
           _action: string
