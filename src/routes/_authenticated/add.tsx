@@ -28,6 +28,7 @@ export const Route = createFileRoute("/_authenticated/add")({
 });
 
 const CONDITIONS = ["New", "Used A", "Used B", "Used C"] as const;
+const STORAGE_OPTIONS = ["16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB"];
 
 const schema = z.object({
   shop_id: z.string().uuid("Pick a shop"),
@@ -371,7 +372,7 @@ function AddProduct() {
               <Input value={color} onChange={(e) => setColor(e.target.value)} />
             </Field>
             <Field label="Storage">
-              <Input value={storage} onChange={(e) => setStorage(e.target.value)} placeholder="e.g. 128GB" list="storage-opts" />
+              <select className="field" aria-label="Storage" value={storage} onChange={(e) => setStorage(e.target.value)}><option value="">Select storage</option>{STORAGE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select>
             </Field>
             <Field label="Condition">
               <select className="field" value={condition} onChange={(e) => setCondition(e.target.value)}>
@@ -442,7 +443,7 @@ function AddProduct() {
                       />
                     </td>
                     <td className="p-1"><Input className="min-w-24" value={r.color} onChange={(e) => setRow(i, { color: e.target.value })} /></td>
-                    <td className="p-1"><Input className="min-w-20" value={r.storage} list="storage-opts" onChange={(e) => setRow(i, { storage: e.target.value })} /></td>
+                    <td className="p-1"><select className="field min-w-24" aria-label="Storage" value={r.storage} onChange={(e) => setRow(i, { storage: e.target.value })}><option value="">—</option>{STORAGE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select></td>
                     <td className="p-1">
                       <select className="field min-w-24" value={r.condition} onChange={(e) => setRow(i, { condition: e.target.value })}>
                         {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
@@ -468,9 +469,6 @@ function AddProduct() {
           </div>
         </div>
       )}
-      <datalist id="storage-opts">
-        {["64GB", "128GB", "256GB", "512GB", "1TB"].map((s) => <option key={s} value={s} />)}
-      </datalist>
     </div>
   );
 }

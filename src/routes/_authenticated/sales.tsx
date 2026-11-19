@@ -48,7 +48,9 @@ function Sales() {
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-  const { shopId: shop } = useCurrentShop();
+  const { shopId: currentShop } = useCurrentShop();
+  const [ownerShop, setOwnerShop] = useState("");
+  const shop = isOwner ? ownerShop : currentShop;
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [format, setFormat] = useState<"thermal" | "a4">("thermal");
   const [reprintError, setReprintError] = useState("");
@@ -110,6 +112,12 @@ function Sales() {
         <h1 className="mr-auto text-2xl font-bold">Sales History ({filtered.length})</h1>
         <Input className="w-full sm:w-56" placeholder="Search receipt, IMEI, customer…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <Input type="date" className="w-full sm:w-40" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
+        {isOwner && (
+          <select className="field w-full sm:w-48" aria-label="Filter by shop" value={ownerShop} onChange={(e) => setOwnerShop(e.target.value)}>
+            <option value="">All shops</option>
+            {shops.map((sh) => <option key={sh.id} value={sh.id}>{sh.name}</option>)}
+          </select>
+        )}
         <Input type="date" className="w-full sm:w-40" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" />
 
       </div>
