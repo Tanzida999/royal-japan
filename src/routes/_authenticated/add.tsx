@@ -13,7 +13,7 @@ import { PrintLabel, type LabelData } from "@/components/PrintLabel";
 import { CameraScan } from "@/components/CameraScan";
 import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
-import { StaffScan } from "@/components/StaffScan";
+import { LoggedInStaff } from "@/components/LoggedInStaff";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { TrackingFields } from "@/components/TrackingEditor";
@@ -75,6 +75,7 @@ function AddProduct() {
   const [supPay, setSupPay] = useState<string>("Cash");
   const [paid, setPaid] = useState("");
   const [staffCode, setStaffCode] = useState("");
+  useEffect(() => { if (me?.staff_code) setStaffCode((c) => c || me.staff_code || ""); }, [me?.staff_code]);
   const [rows, setRows] = useState<BulkRow[]>([emptyRow()]);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -137,7 +138,7 @@ function AddProduct() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!staffCode) return setError("Scan your staff code first");
+    if (!staffCode) return setError("Your account has no staff code. Ask the owner to set one.");
     const supplierError = supplierProblem(supplier, activeSuppliers);
     if (supplierError) return setError(supplierError);
     if (imeiError) return setError(imeiError);
@@ -200,7 +201,7 @@ function AddProduct() {
   async function saveAll() {
     setError("");
     if (!shopId) return setError("Pick a shop");
-    if (!staffCode) return setError("Scan your staff code first");
+    if (!staffCode) return setError("Your account has no staff code. Ask the owner to set one.");
     const supplierError = supplierProblem(supplier, activeSuppliers);
     if (supplierError) return setError(supplierError);
     const pe = paymentOk() || trackingOk();
@@ -322,7 +323,7 @@ function AddProduct() {
           Bulk mode
         </label>
       </div>
-      <StaffScan value={staffCode} onChange={(c) => setStaffCode(c)} autoFocus camera errorText="Unknown staff code" onVerified={focusImei} />
+      <LoggedInStaff me={me} value={staffCode} onChange={(c) => setStaffCode(c)} onVerified={focusImei} />
 
       {!bulk ? (
         <form onSubmit={submit} className="space-y-4">
