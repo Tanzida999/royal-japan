@@ -13,6 +13,7 @@ import { PrintLabel, type LabelData } from "@/components/PrintLabel";
 import { CameraScan } from "@/components/CameraScan";
 import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
+import { extractImei, guessFromImei, toHalfWidth } from "@/lib/imei-scan";
 import { LoggedInStaff } from "@/components/LoggedInStaff";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
@@ -86,10 +87,47 @@ function AddProduct() {
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
   const [postError, setPostError] = useState("");
+  const [scanProblem, setScanProblem] = useState("");
+  const [scanNote, setScanNote] = useState("");
+  const resolvedImei = useRef("");
 
   const focusImei = () => setTimeout(() => (bulk ? bulkImeiRefs.current[rows.length - 1] : imeiRef.current)?.focus(), 0);
   useEffect(() => { if (!bulk && !saved && staffCode) imeiRef.current?.focus(); }, [bulk, saved]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (bulk && !saved && staffCode) bulkImeiRefs.current[rows.length - 1]?.focus(); }, [bulk, rows.length, saved]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Read a scanned/typed IMEI, then fill model (and storage/colour if known) from earlier phones. */
+  async function acceptImei(raw: string) {
+    const { imei: v, problem } = extractImei(raw);
+    setScanNote("");
+    if (problem) { setScanProblem(problem); resolvedImei.current = raw; return; }
+    setScanProblem("");
+    resolvedImei.current = v;
+    setImei(v);
+    if (existing.has(v)) return;
+    const g = await guessFromImei(v);
+    if (!g) { setScanNote("New model code: pick the brand and model once. Next time this model fills in automatically."); brandRef.current?.focus(); return; }
+    const m = models.find((x) => x.id === g.model_id);
+    if (m) { setBrand(m.brand); setModelId(m.id); }
+    if (g.storage) setStorage((s) => s || g.storage);
+    if (g.color) setColor((c) => c || g.color);
+    setScanNote(`Filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Check before saving.`);
+  }
+  useEffect(() => {
+    if (bulk || imei.length < 15 || imei === resolvedImei.current) return;
+    const t = setTimeout(() => void acceptImei(imei), 250);
+    return () => clearTimeout(t);
+  }, [imei, bulk]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /** Bulk mode: check the scanned IMEI for row i and fill an empty row from earlier phones. */
+  async function acceptRowImei(i: number, raw: string) {
+    const { imei: v, problem } = extractImei(raw);
+    if (problem) { setError(`Row ${i + 1}: ${problem}`); return false; }
+    setError("");
+    setRow(i, { imei: v });
+    const g = existing.has(v) ? null : await guessFromImei(v);
+    if (g) setRows((rs) => rs.map((r, j) => j === i ? { ...r, model_id: r.model_id || g.model_id, storage: r.storage || g.storage, color: r.color || g.color } : r));
+    return true;
+  }
 
   const brands = useMemo(() => [...new Set(models.map((m) => m.brand))], [models]);
   const brandModels = models.filter((m) => m.brand === brand);
@@ -335,14 +373,18 @@ function AddProduct() {
                 ref={imeiRef}
                 aria-label="IMEI"
                 inputMode="numeric"
-                maxLength={15}
+                maxLength={40}
+                autoComplete="off"
+                lang="en"
                 value={imei}
-                onChange={(e) => setImei(e.target.value.replace(/\D/g, ""))}
-                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); brandRef.current?.focus(); } }}
-                placeholder="15 digits"
+                onChange={(e) => { setImei(toHalfWidth(e.target.value).replace(/\D/g, "").slice(0, 32)); setScanProblem(""); setScanNote(""); }}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); void acceptImei(imei); } }}
+                onPaste={(e) => { e.preventDefault(); void acceptImei(e.clipboardData.getData("text")); }}
+                placeholder="Scan the IMEI barcode"
               />
-              {imeiError && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
-              <CameraScan onScan={c => { setImei(c.trim()); brandRef.current?.focus(); }} />
+              {scanProblem ? <p role="alert" className="text-xs font-semibold text-destructive">{scanProblem}</p> : imeiError && imei.length >= 15 && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
+              {scanNote && !scanProblem && <p className="text-xs text-primary">{scanNote}</p>}
+              <CameraScan onScan={c => void acceptImei(c)} />
             </Field>
             <Field label="Brand">
               <select
@@ -430,12 +472,15 @@ function AddProduct() {
                         aria-label={`IMEI row ${i + 1}`}
                         className="min-w-40 font-mono"
                         inputMode="numeric"
-                        maxLength={15}
+                        maxLength={40}
+                        autoComplete="off"
+                        lang="en"
                         value={r.imei}
-                        onChange={(e) => setRow(i, { imei: e.target.value.replace(/\D/g, "") })}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
+                        onChange={(e) => setRow(i, { imei: toHalfWidth(e.target.value).replace(/\D/g, "").slice(0, 32) })}
+                        onKeyDown={async (e) => {
+                          if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                             e.preventDefault();
+                            if (!(await acceptRowImei(i, r.imei))) return;
                             if (i === rows.length - 1) setRows((rs) => [...rs, { ...emptyRow(), model_id: r.model_id, color: r.color, storage: r.storage, condition: r.condition, purchase_price: r.purchase_price, selling_price: r.selling_price }]);
                             else bulkImeiRefs.current[i + 1]?.focus();
                           }
@@ -460,7 +505,7 @@ function AddProduct() {
               </tbody>
             </table>
           </div>
-          <CameraScan onScan={c => setRows(rs => { const i = rs.findIndex(r => !r.imei); return i >= 0 ? rs.map((r,j) => j === i ? { ...r, imei: c.trim() } : r) : [...rs, { ...emptyRow(), imei: c.trim() }]; })} />
+          <CameraScan onScan={c => { const i = rows.findIndex(r => !r.imei); if (i >= 0) void acceptRowImei(i, c); else { setRows(rs => [...rs, emptyRow()]); setTimeout(() => void acceptRowImei(rows.length, c), 0); } }} />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRows((rs) => [...rs, emptyRow()])}>Add row</Button>
