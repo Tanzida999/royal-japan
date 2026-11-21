@@ -9,7 +9,7 @@ import { jstDate, meQuery, modelsQuery, shopsQuery } from "@/lib/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { PrintLabel, type LabelData } from "@/components/PrintLabel";
+import { PrintLabel, type LabelData, printLabels } from "@/components/PrintLabel";
 import { CameraScan } from "@/components/CameraScan";
 import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
@@ -387,7 +387,7 @@ function AddProduct() {
           </div>
         )}
         <div className="no-print flex gap-2">
-          <Button onClick={() => { window.print(); for (const l of saved) logEvent("label_printed", "products", l.product_code, { product_code: l.product_code, imei: l.imei }); }}>{saved.length > 1 ? "Print all labels" : "Print Label"}</Button>
+          <Button onClick={() => { printLabels(); for (const l of saved) logEvent("label_printed", "products", l.product_code, { product_code: l.product_code, imei: l.imei }); }}>{saved.length > 1 ? "Print all labels" : "Print Label"}</Button>
           <Button variant="outline" onClick={() => { setSaved(null); setPostError(""); }}>
             Add another
           </Button>

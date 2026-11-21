@@ -8,7 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { jstDate, meQuery, PRODUCT_SELECT, shopsQuery, yen, type ProductRow } from "@/lib/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { PrintLabel, type LabelData } from "@/components/PrintLabel";
+import { PrintLabel, type LabelData, printLabels } from "@/components/PrintLabel";
 
 export const Route = createFileRoute("/_authenticated/stock")({
   head: () => pageMeta("Stock — Mobile Shop Manager", "View available and in-transit phone inventory at the current shop."),
@@ -67,7 +67,7 @@ function Stock() {
       <div className="space-y-4">
         <PrintLabel data={label} />
         <div className="no-print flex gap-2">
-          <Button onClick={() => { window.print(); logEvent("label_printed", "products", label.product_code, { product_code: label.product_code, imei: label.imei }); }}>Print Label</Button>
+          <Button onClick={() => { printLabels(); logEvent("label_printed", "products", label.product_code, { product_code: label.product_code, imei: label.imei }); }}>Print Label</Button>
           <Button variant="outline" onClick={() => setLabel(null)}>Back to stock</Button>
         </div>
       </div>

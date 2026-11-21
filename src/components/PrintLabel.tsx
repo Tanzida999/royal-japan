@@ -28,3 +28,21 @@ export function PrintLabel({ data }: { data: LabelData }) {
     </div>
   );
 }
+
+/**
+ * Print labels on a Brother label printer with 62mm (2.4") continuous tape:
+ * one label per 62mm x 45mm page, no margins.
+ */
+export function printLabels() {
+  const style = document.createElement("style");
+  style.textContent = `@page { size: 62mm 45mm; margin: 0; }
+  @media print {
+    .labels-sheet { display: block !important; }
+    .label-print { width: 58mm !important; margin: 2mm !important; padding: 1mm !important; border: none !important; }
+    .labels-sheet-item, .labels-sheet .label-print { break-after: page; page-break-after: always; }
+    .labels-sheet-item:last-child, .labels-sheet .label-print:last-child { break-after: auto; page-break-after: auto; }
+  }`;
+  document.head.appendChild(style);
+  window.print();
+  setTimeout(() => style.remove(), 1000);
+}
