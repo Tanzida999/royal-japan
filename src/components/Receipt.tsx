@@ -24,6 +24,7 @@ export type ReceiptData = {
   change?: number;
   tax?: number | undefined;
   payments?: { method: string; amount: number }[];
+  delivery?: string | undefined;
   addressee?: string | undefined;
   purpose?: string | undefined;
 };
@@ -55,6 +56,7 @@ export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData;
         <span>Payment</span>
         <span>{receipt.payment}</span>
       </div>
+      {receipt.delivery && <div className="text-xs">{receipt.delivery}</div>}
       {receipt.customer && <div className="text-xs">Customer: {receipt.customer}</div>}
       {receipt.customer_phone && <div className="text-xs">Customer phone: {receipt.customer_phone}</div>}
       <div className="text-xs">Staff: {receipt.staff}</div>

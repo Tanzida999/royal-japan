@@ -12,6 +12,8 @@ import { logEvent } from "@/lib/audit";
 import { ReceiptActions } from "@/components/ReceiptActions";
 import { Receipt, type ReceiptData } from "@/components/Receipt";
 import { salesRowsQuery, todaySales } from "@/lib/sales-history";
+import { db, SHIPMENT_STATUSES } from "@/lib/catalog";
+import { TrackButton } from "@/components/TrackingEditor";
 
 export const Route = createFileRoute("/_authenticated/sales")({
   head: () => pageMeta("Sales History — Mobile Shop Manager", "Review shop sales and reprint complete customer receipts."),
@@ -37,6 +39,8 @@ type SaleRow = {
     color: string;
     storage: string;
     condition: string;
+    carrier?: string | null;
+    tracking_number?: string | null;
     models: { brand: string; model: string } | null;
   } | null;
 };
@@ -54,6 +58,15 @@ function Sales() {
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
   const [format, setFormat] = useState<"thermal" | "a4">("thermal");
   const [reprintError, setReprintError] = useState("");
+  const [channel, setChannel] = useState("");
+  const { data: shipments = {} } = useQuery({
+    queryKey: ["shipments", "by-receipt"],
+    queryFn: async () => {
+      const { data, error } = await db.from("shipments").select("receipt_id, status, carrier, tracking_number, platform, cod");
+      if (error) return {}; // database update not run yet
+      return Object.fromEntries((data ?? []).map((x) => [x.receipt_id, x])) as Record<string, { status: string; carrier: string | null; tracking_number: string | null; platform: string | null; cod: boolean }>;
+    },
+  });
 
   const { data: rows = [], isLoading, error: salesError } = useQuery(salesRowsQuery(me?.id ?? "", shop));
   const today = todaySales(rows, shop, jstDate(new Date()));
@@ -86,6 +99,9 @@ function Sales() {
     if (from && d < from) return false;
     if (to && d > to) return false;
     if (shop && r.shop_id !== shop) return false;
+    const online = Boolean(r.receipt_id && shipments[r.receipt_id]);
+    if (channel === "online" && !online) return false;
+    if (channel === "in_store" && online) return false;
     if (!q) return true;
     const p = r.products;
     return [r.receipt_no, r.customer_name, p?.product_code, p?.imei, p?.models?.brand, p?.models?.model, staffName(r)]
@@ -112,6 +128,11 @@ function Sales() {
         <h1 className="mr-auto text-2xl font-bold">Sales History ({filtered.length})</h1>
         <Input className="w-full sm:w-56" placeholder="Search receipt, IMEI, customer…" value={search} onChange={(e) => setSearch(e.target.value)} />
         <Input type="date" className="w-full sm:w-40" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
+        <select className="field w-full sm:w-40" aria-label="Sale type" value={channel} onChange={(e) => setChannel(e.target.value)}>
+          <option value="">All sale types</option>
+          <option value="in_store">In-store</option>
+          <option value="online">Online</option>
+        </select>
         {isOwner && (
           <select className="field w-full sm:w-48" aria-label="Filter by shop" value={ownerShop} onChange={(e) => setOwnerShop(e.target.value)}>
             <option value="">All shops</option>
@@ -138,14 +159,15 @@ function Sales() {
               <th className="p-2">Shop</th>
               <th className="p-2">Staff</th>
               <th className="p-2">Payment</th>
+              <th className="p-2">Type / tracking</th>
               <th className="p-2 text-right">Price</th>
               {isOwner && <th className="p-2 text-right">Profit</th>}
               <th className="p-2"></th>
             </tr>
           </thead>
           <tbody>
-            {isLoading && <tr><td className="p-4 text-muted-foreground" colSpan={9}>Loading…</td></tr>}
-            {!isLoading && filtered.length === 0 && <tr><td className="p-4 text-muted-foreground" colSpan={9}>No sales.</td></tr>}
+            {isLoading && <tr><td className="p-4 text-muted-foreground" colSpan={10}>Loading…</td></tr>}
+            {!isLoading && filtered.length === 0 && <tr><td className="p-4 text-muted-foreground" colSpan={10}>No sales.</td></tr>}
             {filtered.map((r) => {
               const p = r.products;
               return (
@@ -159,6 +181,21 @@ function Sales() {
                   <td className="p-2">{r.shops?.name}</td>
                   <td className="p-2">{staffName(r)}</td>
                   <td className="p-2">{r.payment}</td>
+                  <td className="p-2">
+                    {(() => {
+                      const sh = r.receipt_id ? shipments[r.receipt_id] : undefined;
+                      const carrier = sh?.carrier ?? p?.carrier ?? null;
+                      const number = sh?.tracking_number ?? p?.tracking_number ?? null;
+                      return (
+                        <div className="space-y-1">
+                          <div className="text-xs font-semibold">{sh ? ["Online", sh.platform, sh.cod ? "COD" : null].filter(Boolean).join(" · ") : "In-store"}</div>
+                          {sh && <div className="text-xs text-muted-foreground">{SHIPMENT_STATUSES.find((x) => x.value === sh.status)?.label ?? sh.status}</div>}
+                          {number && <div className="font-mono text-xs">{carrier} {number}</div>}
+                          {number && <TrackButton carrier={carrier} number={number} />}
+                        </div>
+                      );
+                    })()}
+                  </td>
                   <td className="p-2 text-right">{yen(r.sale_price)}</td>
                   {isOwner && <td className="p-2 text-right">{costs[r.product_id] != null ? yen(r.sale_price - (costs[r.product_id] ?? 0)) : "—"}</td>}
                   <td className="p-2">

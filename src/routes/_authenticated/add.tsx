@@ -22,6 +22,8 @@ import { photoProblem } from "@/lib/product-extras";
 import { uploadProductPhotos } from "@/lib/product-photos";
 import { SupplierSelect } from "@/components/SupplierSelect";
 import { activeSuppliersQuery, supplierProblem } from "@/lib/supplier-directory";
+import { categoriesQuery, db, PHONE_COLORS, COMPUTER_COLORS, PHONE_STORAGE, COMPUTER_DISK, COMPUTER_PROCESSORS, COMPUTER_GENERATIONS, COMPUTER_RAM, COMPUTER_DISPLAY, SERIAL_RE, emptySpecs, type CategoryKind, type ComputerSpecs } from "@/lib/catalog";
+import { compressImage } from "@/lib/product-extras";
 
 export const Route = createFileRoute("/_authenticated/add")({
   head: () => pageMeta("Add Product — Mobile Shop Manager", "Register individual phones or bulk purchases with verified staff badges."),
@@ -29,12 +31,11 @@ export const Route = createFileRoute("/_authenticated/add")({
 });
 
 const CONDITIONS = ["New", "Used A", "Used B", "Used C"] as const;
-const STORAGE_OPTIONS = ["16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB"];
 
 const schema = z.object({
   shop_id: z.string().uuid("Pick a shop"),
   model_id: z.string().uuid("Pick a model"),
-  imei: z.string().regex(/^\d{15}$/, "IMEI must be exactly 15 digits"),
+  imei: z.string().regex(/^(\d{15}|[A-Z0-9][A-Z0-9-]{4,29})$/, "Enter a 15-digit IMEI (or a serial number for computers)"),
   color: z.string().trim().min(1, "Color is required").max(50),
   storage: z.string().trim().min(1, "Storage is required").max(20),
   condition: z.enum(CONDITIONS),
@@ -87,6 +88,14 @@ function AddProduct() {
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
   const [postError, setPostError] = useState("");
+  const { data: categories = [] } = useQuery(categoriesQuery);
+  const [category, setCategory] = useState("");
+  const [specs, setSpecs] = useState<ComputerSpecs>(emptySpecs());
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+  const [invoiceNo, setInvoiceNo] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState("");
+  const [invoiceT, setInvoiceT] = useState("");
+  const [invoiceTotal, setInvoiceTotal] = useState("");
   const [scanProblem, setScanProblem] = useState("");
   const [scanNote, setScanNote] = useState("");
   const resolvedImei = useRef("");
@@ -95,8 +104,27 @@ function AddProduct() {
   useEffect(() => { if (!bulk && !saved && staffCode) imeiRef.current?.focus(); }, [bulk, saved]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (bulk && !saved && staffCode) bulkImeiRefs.current[rows.length - 1]?.focus(); }, [bulk, rows.length, saved]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const activeCategories = categories.filter((c) => c.active);
+  const modelKind = (id: string): CategoryKind => {
+    const cid = (models.find((m) => m.id === id) as { category_id?: string | null } | undefined)?.category_id;
+    return categories.find((c) => c.id === cid)?.kind ?? "phone";
+  };
+  const kind: CategoryKind = modelId ? modelKind(modelId) : (categories.find((c) => c.id === category)?.kind ?? "phone");
+  const isComputer = kind === "computer";
+  const idLabel = kind === "phone" ? "IMEI" : isComputer ? "Serial number" : "IMEI or serial number";
+  const cleanId = (raw: string) => {
+    const v = toHalfWidth(raw).toUpperCase();
+    return kind === "phone" ? v.replace(/\D/g, "").slice(0, 32) : v.replace(/[^A-Z0-9-]/g, "").slice(0, 32);
+  };
+
   /** Read a scanned/typed IMEI, then fill model (and storage/colour if known) from earlier phones. */
   async function acceptImei(raw: string) {
+    const plain = toHalfWidth(raw).trim().toUpperCase();
+    const serial = plain.replace(/\s/g, "");
+    const digitsOnly = /^\d+$/.test(serial);
+    if (kind !== "phone" && SERIAL_RE.test(serial) && (!digitsOnly || (isComputer && ![15, 16, 30].includes(serial.length)))) {
+      setScanProblem(""); setScanNote(""); resolvedImei.current = serial; setImei(serial); return;
+    }
     const { imei: v, problem } = extractImei(raw);
     setScanNote("");
     if (problem) { setScanProblem(problem); resolvedImei.current = raw; return; }
@@ -107,19 +135,21 @@ function AddProduct() {
     const g = await guessFromImei(v);
     if (!g) { setScanNote("New model code: pick the brand and model once. Next time this model fills in automatically."); brandRef.current?.focus(); return; }
     const m = models.find((x) => x.id === g.model_id);
-    if (m) { setBrand(m.brand); setModelId(m.id); }
+    if (m) { setBrand(m.brand); setModelId(m.id); const cid = (m as { category_id?: string | null }).category_id; if (cid) setCategory(cid); }
     if (g.storage) setStorage((s) => s || g.storage);
     if (g.color) setColor((c) => c || g.color);
     setScanNote(`Filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Check before saving.`);
   }
   useEffect(() => {
-    if (bulk || imei.length < 15 || imei === resolvedImei.current) return;
+    if (bulk || kind !== "phone" || imei.length < 15 || imei === resolvedImei.current) return;
     const t = setTimeout(() => void acceptImei(imei), 250);
     return () => clearTimeout(t);
   }, [imei, bulk]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Bulk mode: check the scanned IMEI for row i and fill an empty row from earlier phones. */
   async function acceptRowImei(i: number, raw: string) {
+    const plain = toHalfWidth(raw).trim().toUpperCase().replace(/\s/g, "");
+    if (rows[i] && modelKind(rows[i]!.model_id) !== "phone" && /[A-Z]/.test(plain) && SERIAL_RE.test(plain)) { setError(""); setRow(i, { imei: plain }); return true; }
     const { imei: v, problem } = extractImei(raw);
     if (problem) { setError(`Row ${i + 1}: ${problem}`); return false; }
     setError("");
@@ -129,8 +159,9 @@ function AddProduct() {
     return true;
   }
 
-  const brands = useMemo(() => [...new Set(models.map((m) => m.brand))], [models]);
-  const brandModels = models.filter((m) => m.brand === brand);
+  const catModels = category ? models.filter((m) => (m as { category_id?: string | null }).category_id === category) : models;
+  const brands = useMemo(() => [...new Set(catModels.map((m) => m.brand))], [catModels]);
+  const brandModels = catModels.filter((m) => m.brand === brand);
 
   // Existing IMEIs, for duplicate checks in bulk mode
   const { data: existingImeis = [] } = useQuery({
@@ -143,8 +174,10 @@ function AddProduct() {
     },
   });
   const existing = new Set(existingImeis);
-  const imeiError = imei ? imeiProblem(imei, existing) : "";
-  const rowStatus = validateBulkRows(rows, existing).map((st, i) => st !== "OK" ? st : photoProblem(rows[i]?.condition ?? "New", rowPhotos[i]?.length ?? 0) || "OK");
+  const imeiError = !imei ? "" : kind !== "phone" && SERIAL_RE.test(imei) && !/^\d+$/.test(imei)
+    ? (existing.has(imei) ? "This serial number already exists" : "")
+    : imeiProblem(imei, existing);
+  const rowStatus = validateBulkRows(rows, existing, (mid) => modelKind(mid) !== "phone").map((st, i) => st !== "OK" ? st : photoProblem(rows[i]?.condition ?? "New", rowPhotos[i]?.length ?? 0) || "OK");
   const photoError = photoProblem(condition, photos.length);
 
   function trackingOk() {
@@ -157,11 +190,45 @@ function AddProduct() {
   async function afterSave(productId: string, blobs: Blob[]) {
     const problems: string[] = [];
     try { await uploadProductPhotos(productId, blobs); } catch (e) { problems.push(e instanceof Error ? e.message : "Photos not saved"); }
+    if (isComputer && !bulk && Object.values(specs).some(Boolean)) {
+      const { error } = await db.rpc("set_product_specs", { _product_id: productId, _specs: specs });
+      if (error) problems.push(`Computer details not saved: ${error.message}`);
+    }
     if (tracking.trim()) {
       const { error } = await supabase.rpc("set_product_tracking", { _product_id: productId, _carrier: carrier, _tracking_number: tracking });
       if (error) problems.push(`Tracking not saved: ${error.message}`);
     }
     return problems;
+  }
+
+  function invoiceOk() {
+    if (!invoiceFile) return "";
+    if (invoiceFile.size > 10 * 1024 * 1024) return "Invoice file is too big (max 10 MB)";
+    if (!/^(application\/pdf|image\/)/.test(invoiceFile.type)) return "Invoice must be a PDF or a photo";
+    const t = invoiceT.toUpperCase().replace(/[\s-]/g, "");
+    if (t && !/^T\d{13}$/.test(t)) return "T-number must be T followed by 13 digits";
+    return "";
+  }
+
+  /** Upload the supplier invoice and link it to the saved products; returns problems. */
+  async function saveInvoice(productIds: string[]): Promise<string[]> {
+    if (!invoiceFile || !productIds.length || !me?.id) return [];
+    try {
+      const isPdf = invoiceFile.type === "application/pdf";
+      const blob: Blob = isPdf ? invoiceFile : await compressImage(invoiceFile, 2200, 0.85);
+      const path = `${me.id}/${crypto.randomUUID()}.${isPdf ? "pdf" : "jpg"}`;
+      const up = await db.storage.from("invoices").upload(path, blob, { contentType: isPdf ? "application/pdf" : "image/jpeg" });
+      if (up.error) throw up.error;
+      const { error } = await db.rpc("add_purchase_invoice", {
+        _shop: shopId || null, _supplier: supplier || null, _invoice_no: invoiceNo, _invoice_date: invoiceDate || null,
+        _total: invoiceTotal === "" ? null : Number(invoiceTotal), _t_number: invoiceT, _file_path: path, _file_name: invoiceFile.name, _product_ids: productIds,
+      });
+      if (error) throw error;
+      setInvoiceFile(null); setInvoiceNo(""); setInvoiceDate(""); setInvoiceT(""); setInvoiceTotal("");
+      return [];
+    } catch (e) {
+      return [`Invoice not saved: ${e instanceof Error ? e.message : "upload failed"}`];
+    }
   }
 
   const modelName = (id: string) => {
@@ -186,6 +253,9 @@ function AddProduct() {
     if (te) return setError(te);
     const pe = paymentOk();
     if (pe) return setError(pe);
+    const ie = invoiceOk();
+    if (ie) return setError(ie);
+    if (isComputer && (!specs.processor || !specs.ram)) return setError("Pick the processor and RAM for the computer");
     const parsed = schema.safeParse({
       shop_id: shopId,
       model_id: modelId,
@@ -218,7 +288,8 @@ function AddProduct() {
       setBusy(false);
       return setError(error.message.includes("duplicate") ? "This IMEI or product code already exists" : error.message);
     }
-    const problems = await afterSave(data.id, photos.map((x) => x.blob));
+    const problems = [...(await afterSave(data.id, photos.map((x) => x.blob))), ...(await saveInvoice([data.id]))];
+    setSpecs(emptySpecs());
     setBusy(false);
     setPostError(problems.length ? `Phone saved, but: ${problems.join("; ")}. Add them from the phone's details page.` : "");
     photos.forEach((x) => URL.revokeObjectURL(x.url));
@@ -243,7 +314,7 @@ function AddProduct() {
     if (!staffCode) return setError("Your account has no staff code. Ask the owner to set one.");
     const supplierError = supplierProblem(supplier, activeSuppliers);
     if (supplierError) return setError(supplierError);
-    const pe = paymentOk() || trackingOk();
+    const pe = paymentOk() || trackingOk() || invoiceOk();
     if (pe) return setError(pe);
     if (rows.length === 0) return setError("Add at least one phone");
     if (rowStatus.some((s) => s !== "OK")) return setError("Fix every row first — all rows must be OK");
@@ -268,8 +339,9 @@ function AddProduct() {
       const idx = rows.findIndex((r) => r.imei.trim() === p.imei);
       problems.push(...(await afterSave(p.id, (rowPhotos[idx >= 0 ? idx : i] ?? []).map((x) => x.blob))).map((m) => `${p.product_code}: ${m}`));
     }
+    problems.push(...(await saveInvoice((data ?? []).map((p) => p.id))));
     setBusy(false);
-    setPostError(problems.length ? `Phones saved, but: ${problems.join("; ")}. Add them from each phone's details page.` : "");
+    setPostError(problems.length ? `Products saved, but: ${problems.join("; ")}. Add them from each phone's details page.` : "");
     rowPhotos.flat().forEach((x) => URL.revokeObjectURL(x.url));
     setRowPhotos([[]]);
     setTracking("");
@@ -350,6 +422,19 @@ function AddProduct() {
       <Field label="Shipping (optional)">
         <TrackingFields carrier={carrier} number={tracking} onCarrier={setCarrier} onNumber={setTracking} />
       </Field>
+      <div className="space-y-2 rounded-md border p-3 sm:col-span-2">
+        <Label htmlFor="invoice-file">Supplier invoice (optional — PDF or photo)</Label>
+        <Input id="invoice-file" type="file" accept="application/pdf,image/*" onChange={(e) => setInvoiceFile(e.target.files?.[0] ?? null)} />
+        {invoiceFile && (
+          <div className="grid gap-2 sm:grid-cols-4">
+            <Input aria-label="Invoice number" placeholder="Invoice no." value={invoiceNo} maxLength={50} onChange={(e) => setInvoiceNo(e.target.value)} />
+            <Input aria-label="Invoice date" type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)} />
+            <Input aria-label="T-number" placeholder="T-number (T + 13 digits)" value={invoiceT} maxLength={16} onChange={(e) => setInvoiceT(e.target.value)} />
+            <Input aria-label="Invoice total" placeholder="Invoice total ¥" inputMode="numeric" value={invoiceTotal} onChange={(e) => setInvoiceTotal(e.target.value.replace(/\D/g, ""))} />
+          </div>
+        )}
+        {bulk && invoiceFile && <p className="text-xs text-muted-foreground">This invoice will be linked to every product in this batch.</p>}
+      </div>
     </>
   );
 
@@ -368,19 +453,27 @@ function AddProduct() {
         <form onSubmit={submit} className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             {shared}
-            <Field label="IMEI (scan or type)">
+            {activeCategories.length > 0 && (
+              <Field label="Category">
+                <select aria-label="Category" className="field" value={category} onChange={(e) => { setCategory(e.target.value); setBrand(""); setModelId(""); setStorage(""); setColor(""); }}>
+                  <option value="">All categories</option>
+                  {activeCategories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </Field>
+            )}
+            <Field label={`${idLabel} (scan or type)`}>
               <Input
                 ref={imeiRef}
                 aria-label="IMEI"
-                inputMode="numeric"
+                inputMode={kind === "phone" ? "numeric" : "text"}
                 maxLength={40}
                 autoComplete="off"
                 lang="en"
                 value={imei}
-                onChange={(e) => { setImei(toHalfWidth(e.target.value).replace(/\D/g, "").slice(0, 32)); setScanProblem(""); setScanNote(""); }}
+                onChange={(e) => { setImei(cleanId(e.target.value)); setScanProblem(""); setScanNote(""); }}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); void acceptImei(imei); } }}
                 onPaste={(e) => { e.preventDefault(); void acceptImei(e.clipboardData.getData("text")); }}
-                placeholder="Scan the IMEI barcode"
+                placeholder={kind === "phone" ? "Scan the IMEI barcode" : isComputer ? "Scan the serial number" : "Scan IMEI or serial"}
               />
               {scanProblem ? <p role="alert" className="text-xs font-semibold text-destructive">{scanProblem}</p> : imeiError && imei.length >= 15 && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
               {scanNote && !scanProblem && <p className="text-xs text-primary">{scanNote}</p>}
@@ -411,11 +504,27 @@ function AddProduct() {
               </select>
             </Field>
             <Field label="Color">
-              <Input value={color} onChange={(e) => setColor(e.target.value)} />
+              <ColorSelect value={color} onChange={setColor} options={isComputer ? COMPUTER_COLORS : PHONE_COLORS} />
             </Field>
-            <Field label="Storage">
-              <select className="field" aria-label="Storage" value={storage} onChange={(e) => setStorage(e.target.value)}><option value="">Select storage</option>{STORAGE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select>
+            <Field label={isComputer ? "Storage (SSD / HDD)" : "Storage"}>
+              <OptionSelect label="Storage" value={storage} onChange={setStorage} options={isComputer ? COMPUTER_DISK : PHONE_STORAGE} placeholder="Select storage" />
             </Field>
+            {isComputer && (
+              <>
+                <Field label="Processor">
+                  <OptionSelect label="Processor" value={specs.processor} onChange={(v) => setSpecs((s) => ({ ...s, processor: v }))} options={COMPUTER_PROCESSORS} placeholder="Select processor" />
+                </Field>
+                <Field label="Generation">
+                  <OptionSelect label="Generation" value={specs.generation} onChange={(v) => setSpecs((s) => ({ ...s, generation: v }))} options={COMPUTER_GENERATIONS} placeholder="Select generation" />
+                </Field>
+                <Field label="RAM">
+                  <OptionSelect label="RAM" value={specs.ram} onChange={(v) => setSpecs((s) => ({ ...s, ram: v }))} options={COMPUTER_RAM} placeholder="Select RAM" />
+                </Field>
+                <Field label="Display size">
+                  <OptionSelect label="Display size" value={specs.display} onChange={(v) => setSpecs((s) => ({ ...s, display: v }))} options={COMPUTER_DISPLAY} placeholder="Select display size" />
+                </Field>
+              </>
+            )}
             <Field label="Condition">
               <select className="field" value={condition} onChange={(e) => setCondition(e.target.value)}>
                 {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
@@ -446,7 +555,7 @@ function AddProduct() {
                 <tr>
                   <th className="p-2">#</th>
                   <th className="p-2">Model</th>
-                  <th className="p-2">IMEI</th>
+                  <th className="p-2">IMEI / Serial</th>
                   <th className="p-2">Color</th>
                   <th className="p-2">Storage</th>
                   <th className="p-2">Cond.</th>
@@ -476,7 +585,7 @@ function AddProduct() {
                         autoComplete="off"
                         lang="en"
                         value={r.imei}
-                        onChange={(e) => setRow(i, { imei: toHalfWidth(e.target.value).replace(/\D/g, "").slice(0, 32) })}
+                        onChange={(e) => { const v = toHalfWidth(e.target.value).toUpperCase(); setRow(i, { imei: modelKind(r.model_id) === "phone" ? v.replace(/\D/g, "").slice(0, 32) : v.replace(/[^A-Z0-9-]/g, "").slice(0, 32) }); }}
                         onKeyDown={async (e) => {
                           if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                             e.preventDefault();
@@ -487,8 +596,8 @@ function AddProduct() {
                         }}
                       />
                     </td>
-                    <td className="p-1"><Input className="min-w-24" value={r.color} onChange={(e) => setRow(i, { color: e.target.value })} /></td>
-                    <td className="p-1"><select className="field min-w-24" aria-label="Storage" value={r.storage} onChange={(e) => setRow(i, { storage: e.target.value })}><option value="">—</option>{STORAGE_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}</select></td>
+                    <td className="p-1"><div className="min-w-32"><ColorSelect value={r.color} onChange={(v) => setRow(i, { color: v })} options={modelKind(r.model_id) === "computer" ? COMPUTER_COLORS : PHONE_COLORS} /></div></td>
+                    <td className="p-1"><select className="field min-w-24" aria-label="Storage" value={r.storage} onChange={(e) => setRow(i, { storage: e.target.value })}><option value="">—</option>{(modelKind(r.model_id) === "computer" ? COMPUTER_DISK : PHONE_STORAGE).map((o) => <option key={o} value={o}>{o}</option>)}{r.storage && !(modelKind(r.model_id) === "computer" ? COMPUTER_DISK : PHONE_STORAGE).includes(r.storage) && <option value={r.storage}>{r.storage}</option>}</select></td>
                     <td className="p-1">
                       <select className="field min-w-24" value={r.condition} onChange={(e) => setRow(i, { condition: e.target.value })}>
                         {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
@@ -514,6 +623,34 @@ function AddProduct() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Dropdown that also keeps a value not in the list (e.g. filled from an earlier phone). */
+function OptionSelect({ label, value, onChange, options, placeholder }: { label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
+  return (
+    <select className="field" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{placeholder}</option>
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      {value && !options.includes(value) && <option value={value}>{value}</option>}
+    </select>
+  );
+}
+
+/** Colour dropdown with an "Other…" choice for colours not in the list. */
+function ColorSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
+  const [other, setOther] = useState(false);
+  const custom = other || (value !== "" && !options.includes(value));
+  return (
+    <div className="flex gap-2">
+      <select className="field min-w-0 flex-1" aria-label="Color" value={custom ? "__other" : value}
+        onChange={(e) => { if (e.target.value === "__other") { setOther(true); onChange(""); } else { setOther(false); onChange(e.target.value); } }}>
+        <option value="">Select color</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+        <option value="__other">Other…</option>
+      </select>
+      {custom && <Input aria-label="Other color" className="min-w-0 flex-1" placeholder="Type color" value={value} maxLength={50} onChange={(e) => onChange(e.target.value)} />}
     </div>
   );
 }

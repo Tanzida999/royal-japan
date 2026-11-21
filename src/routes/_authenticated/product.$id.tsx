@@ -11,6 +11,7 @@ import { ProductPhotos } from "@/components/ProductPhotos";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { TrackButton, TrackingEditor } from "@/components/TrackingEditor";
 import { Button } from "@/components/ui/button";
+import { db, specsText } from "@/lib/catalog";
 
 export const Route = createFileRoute("/_authenticated/product/$id")({
   head: () => pageMeta("Phone details — Mobile Shop Manager", "Condition photos, location and shipping tracking for one phone."),
@@ -37,6 +38,22 @@ function ProductDetail() {
       return count ?? 0;
     },
   });
+  const privileged = me?.role === "owner" || Boolean(me?.manager);
+  const { data: extra } = useQuery({
+    queryKey: ["product-extra", id, privileged],
+    queryFn: async () => {
+      const { data, error } = await db.from("products").select(privileged ? "specs, purchase_invoices(invoice_no, invoice_date, total_amount, t_number, file_path, file_name)" : "specs").eq("id", id).maybeSingle();
+      if (error) return null; // database update not run yet
+      return data as { specs?: Record<string, unknown>; purchase_invoices?: { invoice_no: string | null; invoice_date: string | null; total_amount: number | null; t_number: string | null; file_path: string; file_name: string | null } | null } | null;
+    },
+  });
+  const invoice = extra?.purchase_invoices ?? null;
+  async function openInvoice() {
+    if (!invoice) return;
+    const { data, error } = await db.storage.from("invoices").createSignedUrl(invoice.file_path, 300);
+    if (error || !data) return setMsg({ ok: false, text: error?.message ?? "Could not open invoice" });
+    window.open(data.signedUrl, "_blank", "noopener");
+  }
   const [picked, setPicked] = useState<PickedPhoto[]>([]);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -59,7 +76,14 @@ function ProductDetail() {
       <div className="rounded-xl border bg-card p-4 sm:p-6">
         <h1 className="text-2xl font-bold">{p.models?.brand} {p.models?.model}</h1>
         <p className="text-muted-foreground">{p.storage} · {p.color} · {p.condition} · {yen(p.selling_price)}</p>
-        <p className="font-mono text-sm">{p.product_code} · IMEI {p.imei}</p>
+        <p className="font-mono text-sm">{p.product_code} · {/^\d{15}$/.test(p.imei) ? "IMEI" : "Serial"} {p.imei}</p>
+        {extra?.specs && specsText(extra.specs) && <p className="text-sm">{specsText(extra.specs)}</p>}
+        {invoice && (
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm">
+            <span>Invoice {invoice.invoice_no ?? ""} {invoice.invoice_date ?? ""} {invoice.total_amount != null ? yen(invoice.total_amount) : ""} {invoice.t_number ?? ""}</span>
+            <Button size="sm" variant="outline" onClick={() => void openInvoice()}>Open invoice</Button>
+          </div>
+        )}
         <p className="text-sm">Status: <span className="font-semibold">{p.status}</span> · At {p.shops?.name} · Added {jstDate(p.created_at)}</p>
       </div>
       <div className="space-y-3 rounded-xl border bg-card p-4 sm:p-6">

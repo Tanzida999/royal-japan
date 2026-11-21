@@ -11,13 +11,13 @@ export type BulkRow = {
 };
 
 /** Returns "OK" or the first problem for each row. */
-export function validateBulkRows(rows: BulkRow[], existing: Set<string>): string[] {
+export function validateBulkRows(rows: BulkRow[], existing: Set<string>, serialAllowed: (modelId: string) => boolean = () => false): string[] {
   const counts = new Map<string, number>();
   for (const r of rows) counts.set(r.imei.trim(), (counts.get(r.imei.trim()) ?? 0) + 1);
   return rows.map((r) => {
     const imei = r.imei.trim();
     if (!r.model_id) return "Missing model";
-    if (!/^\d{15}$/.test(imei)) return "Bad IMEI (need 15 digits)";
+    if (!/^\d{15}$/.test(imei) && !(serialAllowed(r.model_id) && /^[A-Z0-9][A-Z0-9-]{4,29}$/.test(imei))) return serialAllowed(r.model_id) ? "Bad IMEI / serial number" : "Bad IMEI (need 15 digits)";
     if (existing.has(imei)) return "Duplicate (already in system)";
     if ((counts.get(imei) ?? 0) > 1) return "Duplicate (in this list)";
     if (!r.color.trim()) return "Missing color";

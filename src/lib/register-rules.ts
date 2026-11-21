@@ -1,5 +1,5 @@
-export type RegisterLine = { id: string; kind: 'phone' | 'accessory' | 'custom'; name: string; price: number; quantity: number; discount: number; added: string; stock: number; detail?: string; imei?: string };
-export type Tender = { method: 'Cash' | 'Card' | 'PayPay' | 'Bank'; amount: number };
+export type RegisterLine = { id: string; kind: 'phone' | 'accessory' | 'custom'; name: string; price: number; quantity: number; discount: number; added: string; stock: number; detail?: string; imei?: string; carrier?: string | null; tracking?: string | null };
+export type Tender = { method: 'Cash' | 'Card' | 'PayPay' | 'Bank' | 'COD'; amount: number };
 export function inclusiveTax(total: number) { return Math.floor(total * 10 / 110); }
 export function discountAmount(base: number, value: number, percent: boolean) {
   if (!Number.isFinite(value) || value < 0 || (percent && value > 100)) throw new Error('Invalid discount');

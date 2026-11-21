@@ -37,3 +37,7 @@
 - Shared receipts use high-entropy bearer links and a narrow public RPC projection excluding customer contacts, staff identities, IMEIs and internal identifiers.
 - Cash Check is retired from app routes and queries; retain cash tables and immutable history, but receipts must not use the historical closed-register trigger so checkout stays independent of cash sessions.
 - All signed-in pages share the authenticated layout, current-shop header and app-container; RegisterShell supplies only page titles/actions and uses the same container for its footer, preventing page-specific navigation and width drift.
+
+- Categories live in public.categories (kind phone/computer/other) and models.category_id; phones must have a 15-digit IMEI (trigger guard_product_identifier), computers/other may use a serial number. Computer specs are stored in products.specs via set_product_specs.
+- Supplier invoices: private bucket `invoices` under <user_id>/, linked to products via add_purchase_invoice; only owner/manager can read them.
+- Sales have a channel (in_store/online) on receipts; online sales create a shipments row (carrier, tracking, status) updated only via update_shipment. COD fee (¥1,500/2,000/2,500) is a separate receipt line, not discounted. New tables are queried through the untyped `db` client in src/lib/catalog.ts.

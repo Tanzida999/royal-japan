@@ -30,6 +30,8 @@ import { Route as AuthenticatedShopsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/stock'
 import { Route as AuthenticatedStockCheckRouteImport } from './routes/_authenticated/stock-check'
+import { Route as AuthenticatedShipmentsRouteImport } from './routes/_authenticated/shipments'
+import { Route as AuthenticatedCategoriesRouteImport } from './routes/_authenticated/categories'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as ReceiptTokenRouteImport } from './routes/receipt.$token'
@@ -142,6 +144,16 @@ const AuthenticatedStockCheckRoute = AuthenticatedStockCheckRouteImport.update({
   path: '/stock-check',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedShipmentsRoute = AuthenticatedShipmentsRouteImport.update({
+  id: '/shipments',
+  path: '/shipments',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCategoriesRoute = AuthenticatedCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedSuppliersRoute = AuthenticatedSuppliersRouteImport.update({
   id: '/suppliers',
   path: '/suppliers',
@@ -196,6 +208,8 @@ export interface FileRoutesByFullPath {
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
+  '/shipments': typeof AuthenticatedShipmentsRoute
+  '/categories': typeof AuthenticatedCategoriesRoute
   '/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
   '/receipt/$token': typeof ReceiptTokenRoute
@@ -224,6 +238,8 @@ export interface FileRoutesByTo {
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
+  '/shipments': typeof AuthenticatedShipmentsRoute
+  '/categories': typeof AuthenticatedCategoriesRoute
   '/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
   '/receipt/$token': typeof ReceiptTokenRoute
@@ -254,6 +270,8 @@ export interface FileRoutesById {
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stock': typeof AuthenticatedStockRoute
   '/_authenticated/stock-check': typeof AuthenticatedStockCheckRoute
+  '/_authenticated/shipments': typeof AuthenticatedShipmentsRoute
+  '/_authenticated/categories': typeof AuthenticatedCategoriesRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/receipt/$token': typeof ReceiptTokenRoute
@@ -284,6 +302,8 @@ export interface FileRouteTypes {
     | '/staff'
     | '/stock'
     | '/stock-check'
+    | '/shipments'
+    | '/categories'
     | '/suppliers'
     | '/transfers'
     | '/receipt/$token'
@@ -312,6 +332,8 @@ export interface FileRouteTypes {
     | '/staff'
     | '/stock'
     | '/stock-check'
+    | '/shipments'
+    | '/categories'
     | '/suppliers'
     | '/transfers'
     | '/receipt/$token'
@@ -341,6 +363,8 @@ export interface FileRouteTypes {
     | '/_authenticated/staff'
     | '/_authenticated/stock'
     | '/_authenticated/stock-check'
+    | '/_authenticated/shipments'
+    | '/_authenticated/categories'
     | '/_authenticated/suppliers'
     | '/_authenticated/transfers'
     | '/receipt/$token'
@@ -507,6 +531,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStockCheckRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/shipments': {
+      id: '/_authenticated/shipments'
+      path: '/shipments'
+      fullPath: '/shipments'
+      preLoaderRoute: typeof AuthenticatedShipmentsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/categories': {
+      id: '/_authenticated/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof AuthenticatedCategoriesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/suppliers': {
       id: '/_authenticated/suppliers'
       path: '/suppliers'
@@ -584,6 +622,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStockRoute: typeof AuthenticatedStockRoute
   AuthenticatedStockCheckRoute: typeof AuthenticatedStockCheckRoute
+  AuthenticatedShipmentsRoute: typeof AuthenticatedShipmentsRoute
+  AuthenticatedCategoriesRoute: typeof AuthenticatedCategoriesRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRouteWithChildren
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
   AuthenticatedProductIdRoute: typeof AuthenticatedProductIdRoute
@@ -607,6 +647,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStockRoute: AuthenticatedStockRoute,
   AuthenticatedStockCheckRoute: AuthenticatedStockCheckRoute,
+  AuthenticatedShipmentsRoute: AuthenticatedShipmentsRoute,
+  AuthenticatedCategoriesRoute: AuthenticatedCategoriesRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRouteWithChildren,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
   AuthenticatedProductIdRoute: AuthenticatedProductIdRoute,

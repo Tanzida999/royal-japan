@@ -7,5 +7,11 @@ export function receiptView(r: SavedReceipt): ReceiptData {
   const sh = object(r.shop_snapshot);
   const items = (Array.isArray(r.items) ? r.items : []).map(value => { const i = object(value); return { model: String(i['model'] ?? ""), storage: String(i['storage'] ?? ""), color: String(i['color'] ?? ""), imei: String(i['imei'] ?? ""), price: Number(i['price'] ?? 0), quantity: i['quantity'] === undefined ? undefined : Number(i['quantity']), unit_price: Number(i['unit_price'] ?? i['price'] ?? 0) }; });
   const payments = (Array.isArray(r.payment_breakdown) ? r.payment_breakdown : []).map(v => { const p = object(v); return { method: String(p['method'] ?? ''), amount: Number(p['amount'] ?? 0) }; });
-  return { shop: String(sh['name'] ?? ""), address: String(sh['address'] ?? ""), postal_code: String(sh['postal_code'] ?? ""), phone: String(sh['phone'] ?? ""), logo: typeof sh['logo'] === 'string' ? sh['logo'] : null, footer: String(sh['receipt_footer'] ?? ""), receipt_no: r.receipt_no, date: jstDateTime(r.created_at), staff: r.staff_name, customer: r.customer_name, customer_phone: r.customer_phone, payment: payments.length > 1 ? 'Split payment' : r.payment, item: "", imei: "", price: r.total, items, subtotal: r.subtotal, discount: r.discount, paid: r.paid, change: r.change_due, tax: payments.length ? r.tax : undefined, payments };
+  return { shop: String(sh['name'] ?? ""), address: String(sh['address'] ?? ""), postal_code: String(sh['postal_code'] ?? ""), phone: String(sh['phone'] ?? ""), logo: typeof sh['logo'] === 'string' ? sh['logo'] : null, footer: String(sh['receipt_footer'] ?? ""), receipt_no: r.receipt_no, date: jstDateTime(r.created_at), staff: r.staff_name, customer: r.customer_name, customer_phone: r.customer_phone, payment: payments.length > 1 ? 'Split payment' : r.payment, item: "", imei: "", price: r.total, items, subtotal: r.subtotal, discount: r.discount, paid: r.paid, change: r.change_due, tax: payments.length ? r.tax : undefined, payments, delivery: deliveryText(r) };
+}
+/** "Online sale · Mercari · COD" for online receipts (columns exist after the Nov 2026 database update). */
+function deliveryText(r: SavedReceipt): string | undefined {
+  const x = r as SavedReceipt & { channel?: string | null; platform?: string | null; cod?: boolean | null };
+  if (x.channel !== "online") return undefined;
+  return ["Online sale", x.platform, x.cod ? "Cash on delivery" : null].filter(Boolean).join(" · ");
 }
