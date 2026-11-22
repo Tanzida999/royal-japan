@@ -70,7 +70,7 @@ export const modelsQuery = queryOptions({
 });
 
 export const PRODUCT_SELECT =
-  "id, product_code, imei, color, storage, condition, selling_price, status, shop_id, current_shop_id, created_at, carrier, tracking_number, models(*), shops:shops!products_current_shop_id_fkey(name)";
+  "*, models(*), shops:shops!products_current_shop_id_fkey(name)";
 
 export type ProductRow = {
   id: string;
@@ -89,5 +89,6 @@ export type ProductRow = {
   models: { brand: string; model: string; category_id?: string | null } | null;
   shops: { name: string } | null;
   specs?: Record<string, unknown> | null;
+  battery_health?: number | null;
   invoice_id?: string | null;
 };

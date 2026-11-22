@@ -27,6 +27,8 @@ export const COMPUTER_PROCESSORS = ["Intel Core i3", "Intel Core i5", "Intel Cor
 export const COMPUTER_GENERATIONS = ["4th gen", "5th gen", "6th gen", "7th gen", "8th gen", "9th gen", "10th gen", "11th gen", "12th gen", "13th gen", "14th gen", "Series 1", "Series 2", "Ryzen 3000", "Ryzen 4000", "Ryzen 5000", "Ryzen 6000", "Ryzen 7000", "Ryzen 8000", "Ryzen 9000", "Not applicable (Apple M)"];
 export const COMPUTER_RAM = ["4GB", "8GB", "12GB", "16GB", "18GB", "24GB", "32GB", "36GB", "48GB", "64GB", "96GB", "128GB"];
 export const COMPUTER_DISPLAY = ['11.6"', '12"', '12.5"', '13"', '13.3"', '13.5"', '13.6"', '14"', '14.2"', '15"', '15.3"', '15.6"', '16"', '16.2"', '17.3"', '24" (desktop)', '27" (desktop)'];
+/** Battery health choices (%), newest first. */
+export const BATTERY_OPTIONS = Array.from({ length: 51 }, (_, i) => 100 - i);
 export const SERIAL_RE = /^[A-Z0-9][A-Z0-9-]{4,29}$/;
 
 export type ComputerSpecs = { processor: string; generation: string; ram: string; display: string };

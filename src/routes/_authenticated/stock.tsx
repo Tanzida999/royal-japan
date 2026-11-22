@@ -114,7 +114,7 @@ function Stock() {
                 <td className="p-2">{r.models?.brand} {r.models?.model}</td>
                 <td className="p-2">{r.storage}</td>
                 <td className="p-2">{r.color}</td>
-                <td className="p-2">{r.condition}</td>
+                <td className="p-2">{r.condition}{r.battery_health ? <div className="text-xs text-muted-foreground">Battery {r.battery_health}%</div> : null}</td>
                 <td className="p-2">{r.shops?.name}</td>
                 <td className="p-2 text-right">{yen(r.selling_price)}</td>
                 {isOwner && <td className="p-2 text-right">{costs[r.id] != null ? yen(costs[r.id]) : "—"}</td>}
@@ -127,7 +127,7 @@ function Stock() {
                         product_code: r.product_code,
                         model: `${r.models?.brand} ${r.models?.model}`,
                         storage: r.storage,
-                        selling_price: r.selling_price, imei: r.imei, color: r.color, condition: r.condition, purchase_date: jstDate(r.created_at), shop: r.shops?.name ?? "",
+                        selling_price: r.selling_price, imei: r.imei, color: r.color, condition: r.condition, purchase_date: jstDate(r.created_at), shop: r.shops?.name ?? "", battery: r.battery_health ?? null,
                       })
                     }
                   >

@@ -11,6 +11,7 @@ export type LabelData = {
   condition: string;
   purchase_date: string;
   shop: string;
+  battery?: number | null;
 };
 
 /** Small label; .print-area is the only thing visible when printing. */
@@ -18,7 +19,7 @@ export function PrintLabel({ data }: { data: LabelData }) {
   return (
     <div className="print-area label-print inline-block rounded-md border bg-card p-3 text-card-foreground">
       <div className="text-sm font-semibold leading-tight">{data.model}</div>
-      <div className="text-xs">{data.storage} · {data.color} · {data.condition}</div>
+      <div className="text-xs">{data.storage} · {data.color} · {data.condition}{data.battery ? ` · Battery ${data.battery}%` : ""}</div>
       <div className="my-1">
         <Barcode value={data.product_code} />
       </div>
