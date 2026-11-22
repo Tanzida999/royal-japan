@@ -42,10 +42,17 @@ export type ImeiGuess = { model_id: string; storage: string; color: string; matc
 
 /**
  * The first 8 digits of an IMEI (TAC) identify the phone model. Look at phones already
- * added with the same TAC and reuse their model (and storage/colour when they were all the same).
+ * added (in any shop) with the same TAC and reuse their model, and the latest storage/colour.
  */
 export async function guessFromImei(imei: string): Promise<ImeiGuess | null> {
   if (!/^\d{15}$/.test(imei)) return null;
+  const rpc = await (supabase as unknown as { rpc: (f: string, a: object) => Promise<{ data: unknown; error: unknown }> })
+    .rpc("imei_model_hint", { _imei: imei });
+  if (!rpc.error) {
+    const row = (rpc.data as { model_id: string; storage: string | null; color: string | null; matches: number }[] | null)?.[0];
+    return row?.model_id ? { model_id: row.model_id, storage: row.storage ?? "", color: row.color ?? "", matches: row.matches } : null;
+  }
+  // Older database: look only at phones this login can see
   const { data, error } = await supabase
     .from("products")
     .select("model_id, storage, color, created_at")
@@ -53,15 +60,26 @@ export async function guessFromImei(imei: string): Promise<ImeiGuess | null> {
     .order("created_at", { ascending: false })
     .limit(30);
   if (error || !data?.length) return null;
-  const count = (key: "model_id" | "storage" | "color") => {
-    const m = new Map<string, number>();
-    for (const d of data) { const v = String(d[key] ?? ""); if (v) m.set(v, (m.get(v) ?? 0) + 1); }
-    return [...m.entries()].sort((a, b) => b[1] - a[1]);
-  };
-  const models = count("model_id");
-  if (!models.length) return null;
-  const only = (key: "storage" | "color") => { const c = count(key); return c.length === 1 ? c[0]![0] : ""; };
-  return { model_id: models[0]![0], storage: only("storage"), color: only("color"), matches: data.length };
+  const counts = new Map<string, number>();
+  for (const d of data) if (d.model_id) counts.set(d.model_id, (counts.get(d.model_id) ?? 0) + 1);
+  const model = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0];
+  if (!model) return null;
+  const same = data.filter((d) => d.model_id === model);
+  return { model_id: model, storage: same.find((d) => d.storage)?.storage ?? "", color: same.find((d) => d.color)?.color ?? "", matches: same.length };
+}
+
+/** Short beep: high = scan OK, low = problem. Silent if the browser blocks audio. */
+export function beep(ok: boolean) {
+  try {
+    const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.frequency.value = ok ? 1200 : 300; g.gain.value = 0.08;
+    o.connect(g); g.connect(ctx.destination); o.start();
+    o.stop(ctx.currentTime + (ok ? 0.08 : 0.25));
+    o.onended = () => void ctx.close();
+  } catch { /* no sound available */ }
 }
 
 /**

@@ -13,7 +13,7 @@ import { PrintLabel, type LabelData, printLabels } from "@/components/PrintLabel
 import { CameraScan } from "@/components/CameraScan";
 import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
-import { extractImei, guessFromImei, toHalfWidth } from "@/lib/imei-scan";
+import { extractImei, guessFromImei, toHalfWidth, isValidImei, beep } from "@/lib/imei-scan";
 import { LoggedInStaff } from "@/components/LoggedInStaff";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
@@ -65,6 +65,8 @@ function AddProduct() {
   const { shopId, setShopId, isOwner } = useCurrentShop();
   const imeiRef = useRef<HTMLInputElement>(null);
   const brandRef = useRef<HTMLSelectElement>(null);
+  const purchaseRef = useRef<HTMLInputElement>(null);
+  const [autoFilled, setAutoFilled] = useState<string[]>([]);
   const bulkImeiRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [brand, setBrand] = useState("");
   const [modelId, setModelId] = useState("");
@@ -102,7 +104,7 @@ function AddProduct() {
   const resolvedImei = useRef("");
 
   const focusImei = () => setTimeout(() => (bulk ? bulkImeiRefs.current[rows.length - 1] : imeiRef.current)?.focus(), 0);
-  useEffect(() => { if (!bulk && !saved && staffCode) imeiRef.current?.focus(); }, [bulk, saved]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!bulk && !saved && staffCode) imeiRef.current?.focus(); }, [bulk, saved, staffCode]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { if (bulk && !saved && staffCode) bulkImeiRefs.current[rows.length - 1]?.focus(); }, [bulk, rows.length, saved]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const activeCategories = categories.filter((c) => c.active);
@@ -127,24 +129,28 @@ function AddProduct() {
       setScanProblem(""); setScanNote(""); resolvedImei.current = serial; setImei(serial); return;
     }
     const { imei: v, problem, warning } = extractImei(raw);
+    if (v && v === resolvedImei.current && v === imei && !problem) return;
     setScanNote("");
-    if (problem) { setScanProblem(problem); resolvedImei.current = raw; return; }
+    if (problem) { setScanProblem(problem); resolvedImei.current = raw; beep(false); return; }
     setScanProblem("");
     resolvedImei.current = v;
     setImei(v);
-    if (existing.has(v)) return;
+    if (existing.has(v)) { beep(false); return; }
+    beep(true);
     const g = await guessFromImei(v);
     if (warning) { setScanNote(warning); if (!g) { brandRef.current?.focus(); return; } }
     if (!g) { setScanNote("New model code: pick the brand and model once. Next time this model fills in automatically."); brandRef.current?.focus(); return; }
     const m = models.find((x) => x.id === g.model_id);
     if (m) { setBrand(m.brand); setModelId(m.id); const cid = (m as { category_id?: string | null }).category_id; if (cid) setCategory(cid); }
-    if (g.storage) setStorage((s) => s || g.storage);
-    if (g.color) setColor((c) => c || g.color);
-    setScanNote(`${warning ? warning + " " : ""}Filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Check before saving.`);
+    if (g.storage) setStorage(g.storage);
+    if (g.color) setColor(g.color);
+    setAutoFilled(["model", ...(g.storage ? ["storage"] : []), ...(g.color ? ["color"] : [])]);
+    setTimeout(() => purchaseRef.current?.focus(), 0);
+    setScanNote(`${warning ? warning + " " : ""}Auto-filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Storage and colour are from the last one — check the highlighted fields.`);
   }
   useEffect(() => {
     if (bulk || kind !== "phone" || imei.length < 15 || imei === resolvedImei.current) return;
-    const t = setTimeout(() => void acceptImei(imei), 250);
+    const t = setTimeout(() => void acceptImei(imei), imei.length === 15 && isValidImei(imei) ? 0 : 300);
     return () => clearTimeout(t);
   }, [imei, bulk]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -153,7 +159,8 @@ function AddProduct() {
     const plain = toHalfWidth(raw).trim().toUpperCase().replace(/\s/g, "");
     if (rows[i] && modelKind(rows[i]!.model_id) !== "phone" && /[A-Z]/.test(plain) && SERIAL_RE.test(plain)) { setError(""); setRow(i, { imei: plain }); return true; }
     const { imei: v, problem } = extractImei(raw);
-    if (problem) { setError(`Row ${i + 1}: ${problem}`); return false; }
+    if (problem) { setError(`Row ${i + 1}: ${problem}`); beep(false); return false; }
+    beep(!existing.has(v));
     setError("");
     setRow(i, { imei: v });
     const g = existing.has(v) ? null : await guessFromImei(v);
@@ -478,7 +485,7 @@ function AddProduct() {
                 autoComplete="off"
                 lang="en"
                 value={imei}
-                onChange={(e) => { setImei(cleanId(e.target.value)); setScanProblem(""); setScanNote(""); }}
+                onChange={(e) => { setImei(cleanId(e.target.value)); setScanProblem(""); setScanNote(""); setAutoFilled([]); }}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); void acceptImei(imei); } }}
                 onPaste={(e) => { e.preventDefault(); void acceptImei(e.clipboardData.getData("text")); }}
                 placeholder={kind === "phone" ? "Scan the IMEI barcode" : isComputer ? "Scan the serial number" : "Scan IMEI or serial"}
@@ -504,7 +511,7 @@ function AddProduct() {
               </select>
             </Field>
             <Field label="Model">
-              <select className="field" value={modelId} onChange={(e) => setModelId(e.target.value)} disabled={!brand}>
+              <select className={`field ${autoFilled.includes("model") ? "ring-2 ring-amber-400" : ""}`} value={modelId} onChange={(e) => { setModelId(e.target.value); setAutoFilled((a) => a.filter((x) => x !== "model")); }} disabled={!brand}>
                 <option value="">Select model</option>
                 {brandModels.map((m) => (
                   <option key={m.id} value={m.id}>{m.model}</option>
@@ -512,10 +519,10 @@ function AddProduct() {
               </select>
             </Field>
             <Field label="Color">
-              <ColorSelect value={color} onChange={setColor} options={isComputer ? COMPUTER_COLORS : PHONE_COLORS} />
+              <div className={autoFilled.includes("color") ? "rounded-md ring-2 ring-amber-400" : ""}><ColorSelect value={color} onChange={(v) => { setColor(v); setAutoFilled((a) => a.filter((x) => x !== "color")); }} options={isComputer ? COMPUTER_COLORS : PHONE_COLORS} /></div>
             </Field>
             <Field label={isComputer ? "Storage (SSD / HDD)" : "Storage"}>
-              <OptionSelect label="Storage" value={storage} onChange={setStorage} options={isComputer ? COMPUTER_DISK : PHONE_STORAGE} placeholder="Select storage" />
+              <div className={autoFilled.includes("storage") ? "rounded-md ring-2 ring-amber-400" : ""}><OptionSelect label="Storage" value={storage} onChange={(v) => { setStorage(v); setAutoFilled((a) => a.filter((x) => x !== "storage")); }} options={isComputer ? COMPUTER_DISK : PHONE_STORAGE} placeholder="Select storage" /></div>
             </Field>
             {isComputer && (
               <>
@@ -545,7 +552,7 @@ function AddProduct() {
               </select>
             </Field>
             <Field label="Purchase price (¥)">
-              <Input inputMode="numeric" value={purchase} onChange={(e) => setPurchase(e.target.value.replace(/\D/g, ""))} />
+              <Input ref={purchaseRef} inputMode="numeric" value={purchase} onChange={(e) => setPurchase(e.target.value.replace(/\D/g, ""))} />
             </Field>
             <Field label="Selling price (¥)">
               <Input inputMode="numeric" value={selling} onChange={(e) => setSelling(e.target.value.replace(/\D/g, ""))} />
