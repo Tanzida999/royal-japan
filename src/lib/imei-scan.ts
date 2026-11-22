@@ -21,7 +21,7 @@ export const isValidImei = (s: string) => /^\d{15}$/.test(s) && imeiCheckDigit(s
  * Handles: "IMEI: 35…", full-width digits, IMEISV (16 digits), two IMEIs joined (30 digits),
  * and explains common wrong barcodes on phone boxes.
  */
-export function extractImei(raw: string): { imei: string; problem: string } {
+export function extractImei(raw: string): { imei: string; problem: string; warning?: string } {
   const text = toHalfWidth(raw).trim();
   const runs = text.match(/\d+/g) ?? [];
   for (const r of runs) {
@@ -30,7 +30,7 @@ export function extractImei(raw: string): { imei: string; problem: string } {
     if (r.length === 30 && isValidImei(r.slice(0, 15))) return { imei: r.slice(0, 15), problem: "" }; // IMEI1+IMEI2
   }
   const r = runs.sort((a, b) => b.length - a.length)[0] ?? "";
-  if (r.length === 15) return { imei: "", problem: `${r} is not a valid IMEI (check digit wrong). Scan again or type it carefully.` };
+  if (r.length === 15) return { imei: r, problem: "", warning: "Check: the last digit of this IMEI looks unusual. Compare it with the box/phone before saving." };
   if (r.length < 8 && /[A-Z]/i.test(text) && /[A-Z0-9]{8,}/i.test(text)) return { imei: "", problem: `"${text.slice(0, 20)}" is a serial or part number, not the IMEI. Scan the barcode labelled IMEI.` };
   if (r.length === 32) return { imei: "", problem: "That barcode is the EID, not the IMEI. Scan the barcode labelled IMEI." };
   if (r.length === 19 || r.length === 20) return { imei: "", problem: "That barcode is a SIM card number (ICCID), not the IMEI." };
@@ -62,4 +62,19 @@ export async function guessFromImei(imei: string): Promise<ImeiGuess | null> {
   if (!models.length) return null;
   const only = (key: "storage" | "color") => { const c = count(key); return c.length === 1 ? c[0]![0] : ""; };
   return { model_id: models[0]![0], storage: only("storage"), color: only("color"), matches: data.length };
+}
+
+/**
+ * Clean any scanned/typed code (IMEI, product code, serial, SKU):
+ * full-width → normal, uppercase, no spaces. If it contains a real IMEI
+ * ("IMEI: 35…", IMEISV, two IMEIs joined) the IMEI is returned.
+ */
+export function normalizeScan(raw: string): string {
+  const text = toHalfWidth(raw).trim().toUpperCase().replace(/\s+/g, "");
+  if (!text) return "";
+  if (/\d{15}/.test(text)) {
+    const { imei } = extractImei(text);
+    if (imei) return imei;
+  }
+  return text.replace(/^IMEI[:：]?/, "");
 }

@@ -125,7 +125,7 @@ function AddProduct() {
     if (kind !== "phone" && SERIAL_RE.test(serial) && (!digitsOnly || (isComputer && ![15, 16, 30].includes(serial.length)))) {
       setScanProblem(""); setScanNote(""); resolvedImei.current = serial; setImei(serial); return;
     }
-    const { imei: v, problem } = extractImei(raw);
+    const { imei: v, problem, warning } = extractImei(raw);
     setScanNote("");
     if (problem) { setScanProblem(problem); resolvedImei.current = raw; return; }
     setScanProblem("");
@@ -133,12 +133,13 @@ function AddProduct() {
     setImei(v);
     if (existing.has(v)) return;
     const g = await guessFromImei(v);
+    if (warning) { setScanNote(warning); if (!g) { brandRef.current?.focus(); return; } }
     if (!g) { setScanNote("New model code: pick the brand and model once. Next time this model fills in automatically."); brandRef.current?.focus(); return; }
     const m = models.find((x) => x.id === g.model_id);
     if (m) { setBrand(m.brand); setModelId(m.id); const cid = (m as { category_id?: string | null }).category_id; if (cid) setCategory(cid); }
     if (g.storage) setStorage((s) => s || g.storage);
     if (g.color) setColor((c) => c || g.color);
-    setScanNote(`Filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Check before saving.`);
+    setScanNote(`${warning ? warning + " " : ""}Filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Check before saving.`);
   }
   useEffect(() => {
     if (bulk || kind !== "phone" || imei.length < 15 || imei === resolvedImei.current) return;

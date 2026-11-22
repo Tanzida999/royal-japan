@@ -1,3 +1,4 @@
+import { normalizeScan } from "@/lib/imei-scan";
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { createFileRoute } from "@tanstack/react-router";
@@ -197,7 +198,7 @@ function ReceiveScan({ onReceive }: { onReceive: (code: string) => void }) {
       className="flex gap-2"
       onSubmit={(e) => {
         e.preventDefault();
-        if (code.trim()) onReceive(code.trim().toUpperCase());
+        if (normalizeScan(code)) onReceive(normalizeScan(code));
         setCode("");
       }}
     >

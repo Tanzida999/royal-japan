@@ -1,3 +1,4 @@
+import { normalizeScan } from "@/lib/imei-scan";
 import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { ShopSelect } from "@/components/ShopSelect";
@@ -47,7 +48,7 @@ function StockCheck() {
 
   function scan(e: React.FormEvent) {
     e.preventDefault();
-    const q = code.trim().toUpperCase();
+    const q = normalizeScan(code);
     setCode("");
     if (!q) return;
     const p = all.find((x) => x.product_code === q || x.imei === q);
