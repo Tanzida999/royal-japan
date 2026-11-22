@@ -2,6 +2,7 @@ export const SUPPLIER_PAYMENTS = ["Cash", "Bank", "Due", "Partial"] as const;
 
 export type BulkRow = {
   battery?: string;
+  jan?: string;
   model_id: string;
   imei: string;
   color: string;

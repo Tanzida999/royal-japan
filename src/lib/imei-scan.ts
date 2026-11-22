@@ -96,3 +96,28 @@ export function normalizeScan(raw: string): string {
   }
   return text.replace(/^IMEI[:：]?/, "");
 }
+
+/** True for a valid JAN/EAN-13, EAN-8 or UPC-A box barcode (check digit verified). */
+export function isJanCode(code: string): boolean {
+  if (!/^(\d{8}|\d{12}|\d{13})$/.test(code)) return false;
+  const d = code.split("").map(Number);
+  const check = d.pop()!;
+  const sum = d.reverse().reduce((s, n, i) => s + n * (i % 2 === 0 ? 3 : 1), 0);
+  return (10 - (sum % 10)) % 10 === check;
+}
+
+export type Sku = { jan: string; model_id: string; storage: string; color: string };
+
+/** Model / storage / colour saved for a box barcode, or null if this box was never added. */
+export async function lookupSku(jan: string): Promise<Sku | null> {
+  const db = supabase as unknown as { from: (t: string) => { select: (c: string) => { eq: (k: string, v: string) => { maybeSingle: () => Promise<{ data: Sku | null; error: unknown }> } } } };
+  const { data, error } = await db.from("product_skus").select("jan, model_id, storage, color").eq("jan", jan).maybeSingle();
+  return error ? null : data;
+}
+
+/** Remember which model/storage/colour a box barcode is (ignored if the database isn't updated yet). */
+export async function learnSku(jan: string, modelId: string, storage: string, color: string) {
+  if (!jan || !modelId) return;
+  const db = supabase as unknown as { rpc: (f: string, a: object) => Promise<unknown> };
+  try { await db.rpc("learn_sku", { _jan: jan, _model_id: modelId, _storage: storage, _color: color }); } catch { /* not critical */ }
+}

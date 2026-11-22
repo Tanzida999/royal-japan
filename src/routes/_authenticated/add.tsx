@@ -13,7 +13,7 @@ import { PrintLabel, type LabelData, printLabels } from "@/components/PrintLabel
 import { CameraScan } from "@/components/CameraScan";
 import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
-import { extractImei, guessFromImei, toHalfWidth, isValidImei, beep } from "@/lib/imei-scan";
+import { extractImei, guessFromImei, toHalfWidth, isValidImei, beep, isJanCode, lookupSku, learnSku } from "@/lib/imei-scan";
 import { LoggedInStaff } from "@/components/LoggedInStaff";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
@@ -67,6 +67,8 @@ function AddProduct() {
   const brandRef = useRef<HTMLSelectElement>(null);
   const purchaseRef = useRef<HTMLInputElement>(null);
   const [autoFilled, setAutoFilled] = useState<string[]>([]);
+  const [jan, setJan] = useState("");
+  const [janKnown, setJanKnown] = useState(false);
   const bulkImeiRefs = useRef<(HTMLInputElement | null)[]>([]);
   const [brand, setBrand] = useState("");
   const [modelId, setModelId] = useState("");
@@ -120,8 +122,28 @@ function AddProduct() {
     return kind === "phone" ? v.replace(/\D/g, "").slice(0, 32) : v.replace(/[^A-Z0-9-]/g, "").slice(0, 32);
   };
 
+  /** Box barcode (JAN): fills model, storage and colour exactly if this box was added before. */
+  async function acceptJan(code: string) {
+    setJan(code); setImei(""); resolvedImei.current = ""; setScanProblem(""); setAutoFilled([]);
+    const sku = await lookupSku(code);
+    beep(true);
+    if (!sku) {
+      setJanKnown(false);
+      setScanNote(`New box barcode ${code}: pick the model, storage and colour once — next time this box fills in by itself. Now scan the IMEI.`);
+      setTimeout(() => imeiRef.current?.focus(), 0);
+      return;
+    }
+    const m = models.find((x) => x.id === sku.model_id);
+    if (m) { setBrand(m.brand); setModelId(m.id); const cid = (m as { category_id?: string | null }).category_id; if (cid) setCategory(cid); }
+    setStorage(sku.storage); setColor(sku.color); setJanKnown(true);
+    setScanNote(`Box ${code}: ${m ? `${m.brand} ${m.model}` : "model"} ${sku.storage} ${sku.color}. Now scan the IMEI.`);
+    setTimeout(() => imeiRef.current?.focus(), 0);
+  }
+
   /** Read a scanned/typed IMEI, then fill model (and storage/colour if known) from earlier phones. */
   async function acceptImei(raw: string) {
+    const digits = toHalfWidth(raw).trim().replace(/\s/g, "");
+    if (isJanCode(digits)) return acceptJan(digits);
     const plain = toHalfWidth(raw).trim().toUpperCase();
     const serial = plain.replace(/\s/g, "");
     const digitsOnly = /^\d+$/.test(serial);
@@ -137,6 +159,7 @@ function AddProduct() {
     setImei(v);
     if (existing.has(v)) { beep(false); return; }
     beep(true);
+    if (jan && janKnown && modelId) { setScanNote(""); setTimeout(() => purchaseRef.current?.focus(), 0); return; }
     const g = await guessFromImei(v);
     if (warning) { setScanNote(warning); if (!g) { brandRef.current?.focus(); return; } }
     if (!g) { setScanNote("New model code: pick the brand and model once. Next time this model fills in automatically."); brandRef.current?.focus(); return; }
@@ -149,14 +172,24 @@ function AddProduct() {
     setScanNote(`${warning ? warning + " " : ""}Auto-filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Storage and colour are from the last one — check the highlighted fields.`);
   }
   useEffect(() => {
-    if (bulk || kind !== "phone" || imei.length < 15 || imei === resolvedImei.current) return;
-    const t = setTimeout(() => void acceptImei(imei), imei.length === 15 && isValidImei(imei) ? 0 : 300);
+    if (bulk || imei === resolvedImei.current) return;
+    const janLike = isJanCode(imei) && (imei.length === 13 || imei.length === 12 || imei.length === 8);
+    if (!janLike && (kind !== "phone" || imei.length < 15)) return;
+    const t = setTimeout(() => void acceptImei(imei), janLike ? 600 : imei.length === 15 && isValidImei(imei) ? 0 : 300);
     return () => clearTimeout(t);
   }, [imei, bulk]); // eslint-disable-line react-hooks/exhaustive-deps
 
   /** Bulk mode: check the scanned IMEI for row i and fill an empty row from earlier phones. */
   async function acceptRowImei(i: number, raw: string) {
     const plain = toHalfWidth(raw).trim().toUpperCase().replace(/\s/g, "");
+    if (isJanCode(plain)) {
+      // Box barcode: fill this row's model/storage/colour, then the IMEI goes in the same row
+      const sku = await lookupSku(plain);
+      beep(true);
+      setRows((rs) => rs.map((r, j) => j === i ? { ...r, imei: "", jan: plain, ...(sku ? { model_id: sku.model_id, storage: sku.storage, color: sku.color } : {}) } : r));
+      setError(sku ? "" : `Row ${i + 1}: new box barcode — pick model, storage and colour once, then scan the IMEI.`);
+      return false;
+    }
     if (rows[i] && modelKind(rows[i]!.model_id) !== "phone" && /[A-Z]/.test(plain) && SERIAL_RE.test(plain)) { setError(""); setRow(i, { imei: plain }); return true; }
     const { imei: v, problem } = extractImei(raw);
     if (problem) { setError(`Row ${i + 1}: ${problem}`); beep(false); return false; }
@@ -302,6 +335,8 @@ function AddProduct() {
       return setError(error.message.includes("duplicate") ? "This IMEI or product code already exists" : error.message);
     }
     const problems = [...(await afterSave(data.id, photos.map((x) => x.blob), battery)), ...(await saveInvoice([data.id]))];
+    if (jan) void learnSku(jan, v.model_id, v.storage, v.color);
+    setJan(""); setJanKnown(false);
     setSpecs(emptySpecs());
     setBattery("");
     setBusy(false);
@@ -354,6 +389,7 @@ function AddProduct() {
       problems.push(...(await afterSave(p.id, (rowPhotos[idx >= 0 ? idx : i] ?? []).map((x) => x.blob), rows[idx >= 0 ? idx : i]?.battery ?? "")).map((m) => `${p.product_code}: ${m}`));
     }
     problems.push(...(await saveInvoice((data ?? []).map((p) => p.id))));
+    for (const r of rows) if (r.jan && r.model_id) void learnSku(r.jan, r.model_id, r.storage, r.color);
     setBusy(false);
     setPostError(problems.length ? `Products saved, but: ${problems.join("; ")}. Add them from each phone's details page.` : "");
     rowPhotos.flat().forEach((x) => URL.revokeObjectURL(x.url));
@@ -492,7 +528,7 @@ function AddProduct() {
               />
               {scanProblem ? <p role="alert" className="text-xs font-semibold text-destructive">{scanProblem}</p> : imeiError && imei.length >= 15 && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
               {scanNote && !scanProblem && <p className="text-xs text-primary">{scanNote}</p>}
-              <CameraScan onScan={c => void acceptImei(c)} />
+              <CameraScan onScan={c => void acceptImei(c)} accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (isJanCode(t) || extractImei(t).imei) return true; if (kind !== "phone" && SERIAL_RE.test(t.replace(/\s/g, ""))) return true; return extractImei(t).problem || "Not an IMEI — keep scanning"; }} />
             </Field>
             <Field label="Brand">
               <select
@@ -612,7 +648,7 @@ function AddProduct() {
                           if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                             e.preventDefault();
                             if (!(await acceptRowImei(i, r.imei))) return;
-                            if (i === rows.length - 1) setRows((rs) => [...rs, { ...emptyRow(), model_id: r.model_id, color: r.color, storage: r.storage, condition: r.condition, battery: r.battery, purchase_price: r.purchase_price, selling_price: r.selling_price }]);
+                            if (i === rows.length - 1) setRows((rs) => [...rs, { ...emptyRow(), model_id: r.model_id, color: r.color, storage: r.storage, condition: r.condition, battery: r.battery, jan: r.jan, purchase_price: r.purchase_price, selling_price: r.selling_price }]);
                             else bulkImeiRefs.current[i + 1]?.focus();
                           }
                         }}
@@ -637,7 +673,7 @@ function AddProduct() {
               </tbody>
             </table>
           </div>
-          <CameraScan onScan={c => { const i = rows.findIndex(r => !r.imei); if (i >= 0) void acceptRowImei(i, c); else { setRows(rs => [...rs, emptyRow()]); setTimeout(() => void acceptRowImei(rows.length, c), 0); } }} />
+          <CameraScan accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); return isJanCode(t) || Boolean(extractImei(t).imei) || SERIAL_RE.test(t) || (extractImei(t).problem || "Not an IMEI — keep scanning"); }} onScan={c => { const i = rows.findIndex(r => !r.imei); if (i >= 0) void acceptRowImei(i, c); else { setRows(rs => [...rs, emptyRow()]); setTimeout(() => void acceptRowImei(rows.length, c), 0); } }} />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRows((rs) => [...rs, emptyRow()])}>Add row</Button>
