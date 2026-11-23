@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PrintLabel, type LabelData, printLabels } from "@/components/PrintLabel";
 import { CameraScan } from "@/components/CameraScan";
+import { ColorSelect, OptionSelect } from "@/components/ProductFields";
 import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
 import { extractImei, guessFromImei, toHalfWidth, isValidImei, beep, isJanCode, lookupSku, learnSku } from "@/lib/imei-scan";
@@ -103,6 +104,31 @@ function AddProduct() {
   const [invoiceTotal, setInvoiceTotal] = useState("");
   const [scanProblem, setScanProblem] = useState("");
   const [scanNote, setScanNote] = useState("");
+
+  // Keep the unfinished entry if the page reloads (e.g. iPhone reloads the tab after checking Settings → About)
+  const draftKey = me?.id ? `add-product-draft:${me.id}` : "";
+  const draftRestored = useRef(false);
+  useEffect(() => {
+    if (!draftKey || draftRestored.current) return;
+    draftRestored.current = true;
+    try {
+      const d = JSON.parse(localStorage.getItem(draftKey) ?? "null");
+      if (!d || Date.now() - d.t > 12 * 3600_000) return;
+      setBulk(Boolean(d.bulk)); setCategory(d.category ?? ""); setBrand(d.brand ?? ""); setModelId(d.modelId ?? "");
+      setColor(d.color ?? ""); setStorage(d.storage ?? ""); setCondition(d.condition ?? "New"); setBattery(d.battery ?? "");
+      setPurchase(d.purchase ?? ""); setSelling(d.selling ?? ""); setSupplier(d.supplier ?? ""); setSupPay(d.supPay ?? "Cash"); setPaid(d.paid ?? "");
+      setCarrier(d.carrier ?? ""); setTracking(d.tracking ?? ""); setSpecs({ ...emptySpecs(), ...(d.specs ?? {}) }); setJan(d.jan ?? ""); setJanKnown(Boolean(d.janKnown));
+      if (Array.isArray(d.rows) && d.rows.length) { setRows(d.rows); setRowPhotos(d.rows.map(() => [])); }
+      resolvedImei.current = d.imei ?? ""; setImei(d.imei ?? "");
+      if (d.imei || (Array.isArray(d.rows) && d.rows.some((r: BulkRow) => r.imei))) setScanNote("Your unsaved entry was restored. Photos and the invoice file must be added again.");
+    } catch { /* storage unavailable */ }
+  }, [draftKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!draftKey || !draftRestored.current) return;
+    try {
+      localStorage.setItem(draftKey, JSON.stringify({ t: Date.now(), bulk, category, brand, modelId, imei, color, storage, condition, battery, purchase, selling, supplier, supPay, paid, carrier, tracking, specs, jan, janKnown, rows }));
+    } catch { /* storage unavailable */ }
+  }, [draftKey, bulk, category, brand, modelId, imei, color, storage, condition, battery, purchase, selling, supplier, supPay, paid, carrier, tracking, specs, jan, janKnown, rows]);
   const resolvedImei = useRef("");
 
   const focusImei = () => setTimeout(() => (bulk ? bulkImeiRefs.current[rows.length - 1] : imeiRef.current)?.focus(), 0);
@@ -160,16 +186,15 @@ function AddProduct() {
     if (existing.has(v)) { beep(false); return; }
     beep(true);
     if (jan && janKnown && modelId) { setScanNote(""); setTimeout(() => purchaseRef.current?.focus(), 0); return; }
+    setAutoFilled([]);
     const g = await guessFromImei(v);
     if (warning) { setScanNote(warning); if (!g) { brandRef.current?.focus(); return; } }
     if (!g) { setScanNote("New model code: pick the brand and model once. Next time this model fills in automatically."); brandRef.current?.focus(); return; }
     const m = models.find((x) => x.id === g.model_id);
+    if (m && m.id !== modelId) { setColor(""); setStorage(""); } // different model: don't keep the last phone's colour/storage
     if (m) { setBrand(m.brand); setModelId(m.id); const cid = (m as { category_id?: string | null }).category_id; if (cid) setCategory(cid); }
-    if (g.storage) setStorage(g.storage);
-    if (g.color) setColor(g.color);
-    setAutoFilled(["model", ...(g.storage ? ["storage"] : []), ...(g.color ? ["color"] : [])]);
-    setTimeout(() => purchaseRef.current?.focus(), 0);
-    setScanNote(`${warning ? warning + " " : ""}Auto-filled from ${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code. Storage and colour are from the last one — check the highlighted fields.`);
+    setAutoFilled(["model"]);
+    setScanNote(`${warning ? warning + " " : ""}Model detected from the IMEI (${g.matches} earlier phone${g.matches > 1 ? "s" : ""} with the same model code). Now pick colour and storage — or scan the box JAN barcode to fill them exactly.`);
   }
   useEffect(() => {
     if (bulk || imei === resolvedImei.current) return;
@@ -197,7 +222,7 @@ function AddProduct() {
     setError("");
     setRow(i, { imei: v });
     const g = existing.has(v) ? null : await guessFromImei(v);
-    if (g) setRows((rs) => rs.map((r, j) => j === i ? { ...r, model_id: r.model_id || g.model_id, storage: r.storage || g.storage, color: r.color || g.color } : r));
+    if (g) setRows((rs) => rs.map((r, j) => j === i ? { ...r, model_id: r.model_id || g.model_id } : r));
     return true;
   }
 
@@ -682,34 +707,6 @@ function AddProduct() {
           </div>
         </div>
       )}
-    </div>
-  );
-}
-
-/** Dropdown that also keeps a value not in the list (e.g. filled from an earlier phone). */
-function OptionSelect({ label, value, onChange, options, placeholder }: { label: string; value: string; onChange: (v: string) => void; options: string[]; placeholder: string }) {
-  return (
-    <select className="field" aria-label={label} value={value} onChange={(e) => onChange(e.target.value)}>
-      <option value="">{placeholder}</option>
-      {options.map((o) => <option key={o} value={o}>{o}</option>)}
-      {value && !options.includes(value) && <option value={value}>{value}</option>}
-    </select>
-  );
-}
-
-/** Colour dropdown with an "Other…" choice for colours not in the list. */
-function ColorSelect({ value, onChange, options }: { value: string; onChange: (v: string) => void; options: string[] }) {
-  const [other, setOther] = useState(false);
-  const custom = other || (value !== "" && !options.includes(value));
-  return (
-    <div className="flex gap-2">
-      <select className="field min-w-0 flex-1" aria-label="Color" value={custom ? "__other" : value}
-        onChange={(e) => { if (e.target.value === "__other") { setOther(true); onChange(""); } else { setOther(false); onChange(e.target.value); } }}>
-        <option value="">Select color</option>
-        {options.map((o) => <option key={o} value={o}>{o}</option>)}
-        <option value="__other">Other…</option>
-      </select>
-      {custom && <Input aria-label="Other color" className="min-w-0 flex-1" placeholder="Type color" value={value} maxLength={50} onChange={(e) => onChange(e.target.value)} />}
     </div>
   );
 }

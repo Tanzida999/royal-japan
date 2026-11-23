@@ -12,6 +12,7 @@ import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { TrackButton, TrackingEditor } from "@/components/TrackingEditor";
 import { Button } from "@/components/ui/button";
 import { db, specsText } from "@/lib/catalog";
+import { EditProduct } from "@/components/EditProduct";
 
 export const Route = createFileRoute("/_authenticated/product/$id")({
   head: () => pageMeta("Phone details — Mobile Shop Manager", "Condition photos, location and shipping tracking for one phone."),
@@ -55,6 +56,7 @@ function ProductDetail() {
     window.open(data.signedUrl, "_blank", "noopener");
   }
   const [picked, setPicked] = useState<PickedPhoto[]>([]);
+  const [editing, setEditing] = useState(false);
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
   if (isLoading) return <p className="text-muted-foreground">Loading…</p>;
@@ -85,6 +87,10 @@ function ProductDetail() {
           </div>
         )}
         <p className="text-sm">Status: <span className="font-semibold">{p.status}</span> · At {p.shops?.name} · Added {jstDate(p.created_at)}</p>
+        {(privileged || (canEdit && p.status === "in_stock")) && (
+          <Button className="mt-3" variant="outline" onClick={() => setEditing(true)}>Edit details</Button>
+        )}
+        {editing && <EditProduct product={p} onClose={() => setEditing(false)} onSaved={() => setMsg({ ok: true, text: "Details updated. Reprint the label if needed." })} />}
       </div>
       <div className="space-y-3 rounded-xl border bg-card p-4 sm:p-6">
         <h2 className="font-semibold">Condition photos</h2>

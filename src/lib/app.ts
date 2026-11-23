@@ -90,5 +90,6 @@ export type ProductRow = {
   shops: { name: string } | null;
   specs?: Record<string, unknown> | null;
   battery_health?: number | null;
+  model_id?: string;
   invoice_id?: string | null;
 };
