@@ -553,7 +553,7 @@ function AddProduct() {
               />
               {scanProblem ? <p role="alert" className="text-xs font-semibold text-destructive">{scanProblem}</p> : imeiError && imei.length >= 15 && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
               {scanNote && !scanProblem && <p className="text-xs text-primary">{scanNote}</p>}
-              <CameraScan onScan={c => void acceptImei(c)} accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (isJanCode(t) || extractImei(t).imei) return true; if (kind !== "phone" && SERIAL_RE.test(t.replace(/\s/g, ""))) return true; return extractImei(t).problem || "Not an IMEI — keep scanning"; }} />
+              <CameraScan onScan={c => void acceptImei(c)} accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (isJanCode(t)) return t === jan ? "Box barcode already read — now hold the IMEI barcode in the frame (cover the big box barcode with your finger)" : true; if (extractImei(t).imei) return true; if (kind !== "phone" && SERIAL_RE.test(t.replace(/\s/g, ""))) return true; return extractImei(t).problem || "Not an IMEI — keep scanning"; }} />
             </Field>
             <Field label="Brand">
               <select
@@ -698,7 +698,7 @@ function AddProduct() {
               </tbody>
             </table>
           </div>
-          <CameraScan accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); return isJanCode(t) || Boolean(extractImei(t).imei) || SERIAL_RE.test(t) || (extractImei(t).problem || "Not an IMEI — keep scanning"); }} onScan={c => { const i = rows.findIndex(r => !r.imei); if (i >= 0) void acceptRowImei(i, c); else { setRows(rs => [...rs, emptyRow()]); setTimeout(() => void acceptRowImei(rows.length, c), 0); } }} />
+          <CameraScan accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (isJanCode(t) && rows.some((r) => r.jan === t && !r.imei)) return "Box barcode already read — now hold the IMEI barcode in the frame"; return isJanCode(t) || Boolean(extractImei(t).imei) || SERIAL_RE.test(t) || (extractImei(t).problem || "Not an IMEI — keep scanning"); }} onScan={c => { const i = rows.findIndex(r => !r.imei); if (i >= 0) void acceptRowImei(i, c); else { setRows(rs => [...rs, emptyRow()]); setTimeout(() => void acceptRowImei(rows.length, c), 0); } }} />
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => setRows((rs) => [...rs, emptyRow()])}>Add row</Button>

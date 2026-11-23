@@ -58,6 +58,8 @@ export function CameraScan({ onScan, accept, label = "Scan with camera" }: {
           if (disposed || !video.current) return;
           try {
             const codes = await detector.detect(video.current);
+            // several barcodes in view: try the IMEI-looking ones (15+ digits) before the box JAN
+            codes.sort((a, b) => Number(/\d{15}/.test(b.rawValue)) - Number(/\d{15}/.test(a.rawValue)));
             for (const c of codes) if (handle(c.rawValue)) return;
           } catch { /* frame not ready */ }
           timer = setTimeout(() => void tick(), 80);
