@@ -1,3 +1,4 @@
+import { UpdateWatcher } from "@/components/UpdateWatcher";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -123,7 +124,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <ShopProvider><RegisterScope /><Outlet /></ShopProvider>
+      <ShopProvider><RegisterScope /><Outlet /><UpdateWatcher /></ShopProvider>
     </QueryClientProvider>
   );
 }
