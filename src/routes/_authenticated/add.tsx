@@ -1,11 +1,11 @@
 import { logEvent } from "@/lib/audit";
 import { pageMeta } from "@/lib/metadata";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import { jstDate, meQuery, modelsQuery, shopsQuery } from "@/lib/app";
+import { jstDate, meQuery, modelsQuery, shopsQuery, PRODUCT_SELECT, yen, type ProductRow } from "@/lib/app";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -104,6 +104,7 @@ function AddProduct() {
   const [invoiceTotal, setInvoiceTotal] = useState("");
   const [scanProblem, setScanProblem] = useState("");
   const [scanNote, setScanNote] = useState("");
+  const [already, setAlready] = useState<ProductRow | null>(null);
 
   // Keep the unfinished entry if the page reloads (e.g. iPhone reloads the tab after checking Settings → About)
   const draftKey = me?.id ? `add-product-draft:${me.id}` : "";
@@ -187,7 +188,21 @@ function AddProduct() {
     setScanProblem("");
     resolvedImei.current = v;
     setImei(v);
-    if (existing.has(v)) { beep(false); return; }
+    if (existing.has(v)) {
+      beep(false);
+      // Already in the system: show what it is and fill the fields so staff can see it
+      const { data: found } = await supabase.from("products").select(PRODUCT_SELECT).eq("imei", v).maybeSingle();
+      const f = found as unknown as ProductRow | null;
+      setAlready(f);
+      if (f) {
+        const m = models.find((x) => x.id === f.model_id);
+        if (m) { setBrand(m.brand); setModelId(m.id); }
+        setColor(f.color ?? ""); setStorage(f.storage ?? "");
+        if (f.battery_health) setBattery(String(f.battery_health));
+      }
+      return;
+    }
+    setAlready(null);
     beep(true);
     if (jan && janKnown && modelId) { setScanNote(""); setTimeout(() => purchaseRef.current?.focus(), 0); return; }
     setAutoFilled([]);
@@ -550,12 +565,20 @@ function AddProduct() {
                 autoComplete="off"
                 lang="en"
                 value={imei}
-                onChange={(e) => { setImei(cleanId(e.target.value)); setScanProblem(""); setScanNote(""); setAutoFilled([]); }}
+                onChange={(e) => { setImei(cleanId(e.target.value)); setScanProblem(""); setScanNote(""); setAutoFilled([]); setAlready(null); }}
                 onKeyDown={(e) => { if (e.key === "Enter" && !e.nativeEvent.isComposing) { e.preventDefault(); void acceptImei(imei); } }}
                 onPaste={(e) => { e.preventDefault(); void acceptImei(e.clipboardData.getData("text")); }}
                 placeholder={kind === "phone" ? "Scan the IMEI barcode" : isComputer ? "Scan the serial number" : "Scan IMEI or serial"}
               />
               {scanProblem ? <p role="alert" className="text-xs font-semibold text-destructive">{scanProblem}</p> : imeiError && imei.length >= 15 && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
+              {already && (
+                <div role="alert" className="space-y-2 rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950">
+                  <p className="font-semibold">This IMEI is already in the system — it can't be added twice.</p>
+                  <p>{already.models?.brand} {already.models?.model} · {already.storage} · {already.color} · {already.condition}{already.battery_health ? ` · Battery ${already.battery_health}%` : ""}</p>
+                  <p>{already.product_code} · {yen(already.selling_price)} · Status: <strong>{already.status === "in_stock" ? "In stock" : already.status}</strong> · {already.shops?.name} · Added {jstDate(already.created_at)}</p>
+                  <Link to="/product/$id" params={{ id: already.id }} className="inline-block font-semibold text-primary underline">Open this product (edit details / print label)</Link>
+                </div>
+              )}
               {scanNote && !scanProblem && <p className="text-xs text-primary">{scanNote}</p>}
               <CameraScan onScan={c => void acceptImei(c)} accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (/^\d{8,13}$/.test(t) && isStoreCode(t)) return "That is a shop price-sticker barcode — scan the IMEI or the box JAN"; if (isJanCode(t)) return t === jan ? "Box barcode already read — now hold the IMEI barcode in the frame (cover the big box barcode with your finger)" : true; if (extractImei(t).imei) return true; if (kind !== "phone" && SERIAL_RE.test(t.replace(/\s/g, ""))) return true; return extractImei(t).problem || "Not an IMEI — keep scanning"; }} />
             </Field>
