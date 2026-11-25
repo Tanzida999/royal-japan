@@ -19,7 +19,11 @@ export const categoriesQuery = queryOptions({
   staleTime: 60_000,
 });
 
-export const PHONE_COLORS = ["Black", "White", "Silver", "Gold", "Rose Gold", "Blue", "Red", "Green", "Purple", "Pink", "Yellow", "Graphite", "Space Gray", "Midnight", "Starlight", "Natural Titanium", "Black Titanium", "White Titanium", "Blue Titanium", "Desert Titanium"];
+export const PHONE_COLORS = ["Black", "White", "Silver", "Gold", "Rose Gold", "Blue", "Red", "Green", "Purple", "Pink", "Yellow", "Graphite", "Space Gray", "Midnight", "Starlight", "Natural Titanium", "Black Titanium", "White Titanium", "Blue Titanium", "Desert Titanium",
+  // iPhone 17 family (2025)
+  "Cosmic Orange", "Deep Blue", "Mist Blue", "Sage", "Lavender", "Space Black", "Cloud White", "Light Gold", "Sky Blue",
+  // iPhone 18 Pro / Pro Max (2026)
+  "Deep Black", "Glacier Blue", "Burgundy"];
 export const COMPUTER_COLORS = ["Silver", "Space Gray", "Midnight", "Starlight", "Gold", "Black", "White", "Gray", "Blue", "Red"];
 export const PHONE_STORAGE = ["16GB", "32GB", "64GB", "128GB", "256GB", "512GB", "1TB", "2TB"];
 export const COMPUTER_DISK = ["128GB SSD", "256GB SSD", "512GB SSD", "1TB SSD", "2TB SSD", "4TB SSD", "500GB HDD", "1TB HDD", "2TB HDD", "256GB SSD + 1TB HDD", "512GB SSD + 1TB HDD"];
