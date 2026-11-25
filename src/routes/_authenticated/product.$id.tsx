@@ -43,9 +43,9 @@ function ProductDetail() {
   const { data: extra } = useQuery({
     queryKey: ["product-extra", id, privileged],
     queryFn: async () => {
-      const { data, error } = await db.from("products").select(privileged ? "specs, purchase_invoices(invoice_no, invoice_date, total_amount, t_number, file_path, file_name)" : "specs").eq("id", id).maybeSingle();
+      const { data, error } = await db.from("products").select(privileged ? "specs, show_on_website, purchase_invoices(invoice_no, invoice_date, total_amount, t_number, file_path, file_name)" : "specs").eq("id", id).maybeSingle();
       if (error) return null; // database update not run yet
-      return data as { specs?: Record<string, unknown>; purchase_invoices?: { invoice_no: string | null; invoice_date: string | null; total_amount: number | null; t_number: string | null; file_path: string; file_name: string | null } | null } | null;
+      return data as { show_on_website?: boolean; specs?: Record<string, unknown>; purchase_invoices?: { invoice_no: string | null; invoice_date: string | null; total_amount: number | null; t_number: string | null; file_path: string; file_name: string | null } | null } | null;
     },
   });
   const invoice = extra?.purchase_invoices ?? null;
@@ -89,6 +89,14 @@ function ProductDetail() {
         <p className="text-sm">Status: <span className="font-semibold">{p.status}</span> · At {p.shops?.name} · Added {jstDate(p.created_at)}</p>
         {(privileged || (canEdit && p.status === "in_stock")) && (
           <Button className="mt-3" variant="outline" onClick={() => setEditing(true)}>Edit details</Button>
+        )}
+        {privileged && extra && "show_on_website" in extra && p.status === "in_stock" && (
+          <Button className="ml-2 mt-3" variant={extra.show_on_website ? "default" : "outline"} onClick={async () => {
+            const { error } = await db.rpc("set_product_website", { _product_id: p.id, _show: !extra.show_on_website });
+            if (error) return setMsg({ ok: false, text: error.message });
+            await qc.invalidateQueries({ queryKey: ["product-extra", id] });
+            setMsg({ ok: true, text: extra.show_on_website ? "Removed from the website." : "Now shown on kaitorinihon.jp." });
+          }}>{extra.show_on_website ? "✓ On website — remove" : "Show on website"}</Button>
         )}
         {editing && <EditProduct product={p} onClose={() => setEditing(false)} onSaved={() => setMsg({ ok: true, text: "Details updated. Reprint the label if needed." })} />}
       </div>

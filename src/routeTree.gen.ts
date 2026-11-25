@@ -30,6 +30,8 @@ import { Route as AuthenticatedShopsRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedStaffRouteImport } from './routes/_authenticated/staff'
 import { Route as AuthenticatedStockRouteImport } from './routes/_authenticated/stock'
 import { Route as AuthenticatedStockCheckRouteImport } from './routes/_authenticated/stock-check'
+import { Route as AuthenticatedBuybackPricesRouteImport } from './routes/_authenticated/buyback-prices'
+import { Route as AuthenticatedWebRequestsRouteImport } from './routes/_authenticated/web-requests'
 import { Route as AuthenticatedShipmentsRouteImport } from './routes/_authenticated/shipments'
 import { Route as AuthenticatedCategoriesRouteImport } from './routes/_authenticated/categories'
 import { Route as AuthenticatedSuppliersRouteImport } from './routes/_authenticated/suppliers'
@@ -144,6 +146,16 @@ const AuthenticatedStockCheckRoute = AuthenticatedStockCheckRouteImport.update({
   path: '/stock-check',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBuybackPricesRoute = AuthenticatedBuybackPricesRouteImport.update({
+  id: '/buyback-prices',
+  path: '/buyback-prices',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedWebRequestsRoute = AuthenticatedWebRequestsRouteImport.update({
+  id: '/web-requests',
+  path: '/web-requests',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedShipmentsRoute = AuthenticatedShipmentsRouteImport.update({
   id: '/shipments',
   path: '/shipments',
@@ -208,6 +220,8 @@ export interface FileRoutesByFullPath {
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
+  '/buyback-prices': typeof AuthenticatedBuybackPricesRoute
+  '/web-requests': typeof AuthenticatedWebRequestsRoute
   '/shipments': typeof AuthenticatedShipmentsRoute
   '/categories': typeof AuthenticatedCategoriesRoute
   '/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
@@ -238,6 +252,8 @@ export interface FileRoutesByTo {
   '/staff': typeof AuthenticatedStaffRoute
   '/stock': typeof AuthenticatedStockRoute
   '/stock-check': typeof AuthenticatedStockCheckRoute
+  '/buyback-prices': typeof AuthenticatedBuybackPricesRoute
+  '/web-requests': typeof AuthenticatedWebRequestsRoute
   '/shipments': typeof AuthenticatedShipmentsRoute
   '/categories': typeof AuthenticatedCategoriesRoute
   '/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
@@ -270,6 +286,8 @@ export interface FileRoutesById {
   '/_authenticated/staff': typeof AuthenticatedStaffRoute
   '/_authenticated/stock': typeof AuthenticatedStockRoute
   '/_authenticated/stock-check': typeof AuthenticatedStockCheckRoute
+  '/_authenticated/buyback-prices': typeof AuthenticatedBuybackPricesRoute
+  '/_authenticated/web-requests': typeof AuthenticatedWebRequestsRoute
   '/_authenticated/shipments': typeof AuthenticatedShipmentsRoute
   '/_authenticated/categories': typeof AuthenticatedCategoriesRoute
   '/_authenticated/suppliers': typeof AuthenticatedSuppliersRouteWithChildren
@@ -302,6 +320,8 @@ export interface FileRouteTypes {
     | '/staff'
     | '/stock'
     | '/stock-check'
+    | '/buyback-prices'
+    | '/web-requests'
     | '/shipments'
     | '/categories'
     | '/suppliers'
@@ -332,6 +352,8 @@ export interface FileRouteTypes {
     | '/staff'
     | '/stock'
     | '/stock-check'
+    | '/buyback-prices'
+    | '/web-requests'
     | '/shipments'
     | '/categories'
     | '/suppliers'
@@ -363,6 +385,8 @@ export interface FileRouteTypes {
     | '/_authenticated/staff'
     | '/_authenticated/stock'
     | '/_authenticated/stock-check'
+    | '/_authenticated/buyback-prices'
+    | '/_authenticated/web-requests'
     | '/_authenticated/shipments'
     | '/_authenticated/categories'
     | '/_authenticated/suppliers'
@@ -531,6 +555,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStockCheckRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/buyback-prices': {
+      id: '/_authenticated/buyback-prices'
+      path: '/buyback-prices'
+      fullPath: '/buyback-prices'
+      preLoaderRoute: typeof AuthenticatedBuybackPricesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/web-requests': {
+      id: '/_authenticated/web-requests'
+      path: '/web-requests'
+      fullPath: '/web-requests'
+      preLoaderRoute: typeof AuthenticatedWebRequestsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/shipments': {
       id: '/_authenticated/shipments'
       path: '/shipments'
@@ -622,6 +660,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedStaffRoute: typeof AuthenticatedStaffRoute
   AuthenticatedStockRoute: typeof AuthenticatedStockRoute
   AuthenticatedStockCheckRoute: typeof AuthenticatedStockCheckRoute
+  AuthenticatedBuybackPricesRoute: typeof AuthenticatedBuybackPricesRoute
+  AuthenticatedWebRequestsRoute: typeof AuthenticatedWebRequestsRoute
   AuthenticatedShipmentsRoute: typeof AuthenticatedShipmentsRoute
   AuthenticatedCategoriesRoute: typeof AuthenticatedCategoriesRoute
   AuthenticatedSuppliersRoute: typeof AuthenticatedSuppliersRouteWithChildren
@@ -647,6 +687,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStaffRoute: AuthenticatedStaffRoute,
   AuthenticatedStockRoute: AuthenticatedStockRoute,
   AuthenticatedStockCheckRoute: AuthenticatedStockCheckRoute,
+  AuthenticatedBuybackPricesRoute: AuthenticatedBuybackPricesRoute,
+  AuthenticatedWebRequestsRoute: AuthenticatedWebRequestsRoute,
   AuthenticatedShipmentsRoute: AuthenticatedShipmentsRoute,
   AuthenticatedCategoriesRoute: AuthenticatedCategoriesRoute,
   AuthenticatedSuppliersRoute: AuthenticatedSuppliersRouteWithChildren,
