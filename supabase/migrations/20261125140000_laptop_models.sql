@@ -667,5 +667,5 @@ where not exists (select 1 from public.models x where lower(x.brand) = lower(l.b
 
 -- laptops that were already in the list go under Computer too
 update public.models set category_id = (select id from public.categories where name = 'Computer')
-where (model ~* '^(macbook|thinkpad|ideapad|yoga|legion|latitude|inspiron|xps|vostro|precision|alienware|elitebook|probook|zbook|pavilion|envy|spectre|omen|victus|lifebook|lavie|versapro|dynabook|vaio|let''s ?note)' and model !~* '(tab|pad)')
+where (model ~* '^(macbook|thinkpad|ideapad|yoga|legion|latitude|inspiron|xps|vostro|precision|alienware|elitebook|probook|zbook|pavilion|envy|spectre|omen|victus|lifebook|lavie|versapro|dynabook|vaio|let''s ?note)' and model !~* '(\mtab|\mpad\M|ipad)')
   and category_id is distinct from (select id from public.categories where name = 'Computer');
