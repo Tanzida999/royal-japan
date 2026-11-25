@@ -14,7 +14,7 @@ import { CameraScan } from "@/components/CameraScan";
 import { ColorSelect, OptionSelect } from "@/components/ProductFields";
 import { useCurrentShop } from "@/lib/shop-context";
 import { imeiProblem } from "@/lib/pos";
-import { extractImei, guessFromImei, toHalfWidth, isValidImei, beep, isJanCode, lookupSku, learnSku } from "@/lib/imei-scan";
+import { extractImei, guessFromImei, toHalfWidth, isValidImei, beep, isJanCode, isStoreCode, lookupSku, learnSku } from "@/lib/imei-scan";
 import { LoggedInStaff } from "@/components/LoggedInStaff";
 import { validateBulkRows, type BulkRow, SUPPLIER_PAYMENTS } from "@/lib/bulk";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
@@ -170,6 +170,10 @@ function AddProduct() {
   async function acceptImei(raw: string) {
     const digits = toHalfWidth(raw).trim().replace(/\s/g, "");
     if (isJanCode(digits)) return acceptJan(digits);
+    if (/^(\d{8}|\d{12}|\d{13})$/.test(digits) && isStoreCode(digits)) {
+      setScanProblem(`${digits} is a shop / price-sticker barcode, not the product's box barcode. Scan the IMEI, or the box JAN barcode (usually starts with 45 or 49).`);
+      resolvedImei.current = raw; beep(false); return;
+    }
     const plain = toHalfWidth(raw).trim().toUpperCase();
     const serial = plain.replace(/\s/g, "");
     const digitsOnly = /^\d+$/.test(serial);
@@ -553,7 +557,7 @@ function AddProduct() {
               />
               {scanProblem ? <p role="alert" className="text-xs font-semibold text-destructive">{scanProblem}</p> : imeiError && imei.length >= 15 && <p role="alert" className="text-xs text-destructive">{imeiError}</p>}
               {scanNote && !scanProblem && <p className="text-xs text-primary">{scanNote}</p>}
-              <CameraScan onScan={c => void acceptImei(c)} accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (isJanCode(t)) return t === jan ? "Box barcode already read — now hold the IMEI barcode in the frame (cover the big box barcode with your finger)" : true; if (extractImei(t).imei) return true; if (kind !== "phone" && SERIAL_RE.test(t.replace(/\s/g, ""))) return true; return extractImei(t).problem || "Not an IMEI — keep scanning"; }} />
+              <CameraScan onScan={c => void acceptImei(c)} accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (/^\d{8,13}$/.test(t) && isStoreCode(t)) return "That is a shop price-sticker barcode — scan the IMEI or the box JAN"; if (isJanCode(t)) return t === jan ? "Box barcode already read — now hold the IMEI barcode in the frame (cover the big box barcode with your finger)" : true; if (extractImei(t).imei) return true; if (kind !== "phone" && SERIAL_RE.test(t.replace(/\s/g, ""))) return true; return extractImei(t).problem || "Not an IMEI — keep scanning"; }} />
             </Field>
             <Field label="Brand">
               <select

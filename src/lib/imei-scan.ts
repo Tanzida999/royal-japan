@@ -103,7 +103,20 @@ export function isJanCode(code: string): boolean {
   const d = code.split("").map(Number);
   const check = d.pop()!;
   const sum = d.reverse().reduce((s, n, i) => s + n * (i % 2 === 0 ? 3 : 1), 0);
-  return (10 - (sum % 10)) % 10 === check;
+  if ((10 - (sum % 10)) % 10 !== check) return false;
+  return !isStoreCode(code);
+}
+
+/**
+ * Shop-internal / price-sticker barcodes (EAN-13 starting with 2, UPC starting with 2 or 4,
+ * EAN-8 starting with 0 or 2). They are reused for different items, so they must never be
+ * treated as a product's box barcode.
+ */
+export function isStoreCode(code: string): boolean {
+  if (code.length === 13) return code[0] === "2" || /^0[24]/.test(code);
+  if (code.length === 12) return code[0] === "2" || code[0] === "4";
+  if (code.length === 8) return code[0] === "0" || code[0] === "2";
+  return false;
 }
 
 export type Sku = { jan: string; model_id: string; storage: string; color: string };
