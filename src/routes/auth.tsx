@@ -63,6 +63,12 @@ function AuthPage() {
       setBusy(false);
       return setError("This account is disabled. Ask the owner.");
     }
+    if (!me?.role) {
+      await supabase.auth.signOut();
+      qc.clear();
+      setBusy(false);
+      return setError("Password is correct, but this account is not set up as staff yet (no shop or role). Ask the owner to add it on the Staff page.");
+    }
     await logEvent("login", "auth", me?.id ?? "");
     setBusy(false);
     navigate({ to: homeFor(me?.role), replace: true });
