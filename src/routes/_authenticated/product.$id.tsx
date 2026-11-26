@@ -95,8 +95,8 @@ function ProductDetail() {
             const { error } = await db.rpc("set_product_website", { _product_id: p.id, _show: !extra.show_on_website });
             if (error) return setMsg({ ok: false, text: error.message });
             await qc.invalidateQueries({ queryKey: ["product-extra", id] });
-            setMsg({ ok: true, text: extra.show_on_website ? "Removed from the website." : "Now shown on kaitorinihon.jp." });
-          }}>{extra.show_on_website ? "✓ On website — remove" : "Show on website"}</Button>
+            setMsg({ ok: true, text: extra.show_on_website ? "Hidden from kaitorinihon.jp." : "Shown on kaitorinihon.jp again." });
+          }}>{extra.show_on_website ? "✓ On kaitorinihon.jp (automatic) — hide" : "Hidden from website — show again"}</Button>
         )}
         {editing && <EditProduct product={p} onClose={() => setEditing(false)} onSaved={() => setMsg({ ok: true, text: "Details updated. Reprint the label if needed." })} />}
       </div>
