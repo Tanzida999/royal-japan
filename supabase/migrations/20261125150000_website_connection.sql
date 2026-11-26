@@ -51,7 +51,8 @@ create or replace view public.web_shops as
 
 -- ============ 2. Phones for sale on the website ============
 alter table public.products add column if not exists show_on_website boolean not null default false;
-create or replace view public.web_products_for_sale as
+drop view if exists public.web_products_for_sale;
+create view public.web_products_for_sale as
   select p.id, p.product_code, m.brand, m.model, c.name as category, p.storage, p.color, p.condition,
          p.battery_health, p.selling_price, s.name as shop, p.created_at
   from public.products p

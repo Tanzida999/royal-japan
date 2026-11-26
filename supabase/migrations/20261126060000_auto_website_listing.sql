@@ -5,7 +5,8 @@
 alter table public.products alter column show_on_website set default true;
 update public.products set show_on_website = true where status in ('in_stock', 'in_transit') and not show_on_website;
 
-create or replace view public.web_products_for_sale as
+drop view if exists public.web_products_for_sale;
+create view public.web_products_for_sale as
   select p.id, p.product_code, m.brand, m.model, c.name as category, p.storage, p.color, p.condition,
          p.battery_health, p.selling_price, s.name as shop, p.created_at,
          coalesce((select array_agg(ph.url order by ph.created_at) from public.product_photos ph where ph.product_id = p.id), '{}') as photo_paths,
