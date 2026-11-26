@@ -48,7 +48,12 @@ function AuthPage() {
     if (error) {
       setBusy(false);
       failed({ data: { email: email.trim() } }).catch(() => undefined);
-      return setError(/banned/i.test(error.message) ? "This account is disabled. Ask the owner." : "Wrong email or password");
+      return setError(
+        /banned/i.test(error.message) ? "This account is disabled. Ask the owner."
+        : /invalid login credentials/i.test(error.message) ? "Wrong email or password"
+        : /email not confirmed/i.test(error.message) ? "This email is not confirmed yet. Open the invite email first."
+        : `Login failed: ${error.message}`,
+      );
     }
     setRemember(remember);
     qc.clear();
