@@ -56,6 +56,9 @@ function Sales() {
   const [ownerShop, setOwnerShop] = useState("");
   const shop = isOwner ? ownerShop : currentShop;
   const [receipt, setReceipt] = useState<ReceiptData | null>(null);
+  const [receiptId, setReceiptId] = useState("");
+  const [noteDraft, setNoteDraft] = useState("");
+  const [noteMsg, setNoteMsg] = useState("");
   const [format, setFormat] = useState<"thermal" | "a4">("thermal");
   const [reprintError, setReprintError] = useState("");
   const [channel, setChannel] = useState("");
@@ -114,6 +117,22 @@ function Sales() {
     return (
       <div className="space-y-4">
         <Receipt receipt={receipt} format={format} />
+        {receiptId && (
+          <div className="no-print mx-auto max-w-md space-y-2 rounded-xl border bg-card p-3">
+            <label className="block space-y-1">
+              <span className="text-sm font-medium">Notes on this receipt</span>
+              <textarea aria-label="Receipt notes" className="field min-h-20 w-full py-2" maxLength={500} value={noteDraft} onChange={(e) => { setNoteDraft(e.target.value); setNoteMsg(""); }} />
+            </label>
+            <div className="flex items-center justify-end gap-2">
+              {noteMsg && <span className="mr-auto text-sm text-muted-foreground">{noteMsg}</span>}
+              <Button size="sm" disabled={noteDraft.trim() === (receipt.note ?? "")} onClick={async () => {
+                const { data, error } = await db.rpc("set_receipt_note", { _receipt_id: receiptId, _note: noteDraft });
+                if (error) return setNoteMsg(/set_receipt_note/.test(error.message) ? "Ask the owner to run the receipt-notes database update." : error.message);
+                setReceipt({ ...receipt, note: String(data ?? "") }); setNoteMsg("Saved");
+              }}>Save note</Button>
+            </div>
+          </div>
+        )}
         <ReceiptActions format={format} onFormat={setFormat} backLabel="Back to Sales History" onBack={() => setReceipt(null)} onPrint={() => logEvent("receipt_reprinted", "receipts", receipt.receipt_no, { receipt_no: receipt.receipt_no })} />
       </div>
     );
@@ -207,9 +226,10 @@ function Sales() {
                         if (r.receipt_id) {
                           const { data, error } = await supabase.from("receipts").select("*").eq("id", r.receipt_id).single();
                           if (error) return setReprintError(error.message);
-                          setReceipt(receiptView(data));
+                          const view = receiptView(data);
+                          setReceipt(view); setReceiptId(data.id); setNoteDraft(view.note ?? ""); setNoteMsg("");
                         } else {
-                          setReceipt({ shop: r.shops?.name ?? "", receipt_no: r.receipt_no, date: jstDateTime(r.created_at), item: `${p?.models?.brand} ${p?.models?.model} ${p?.storage} ${p?.color}`, imei: p?.imei ?? "", price: r.sale_price, payment: r.payment, customer: r.customer_name ?? "", staff: staffName(r) });
+                          setReceiptId(""); setReceipt({ shop: r.shops?.name ?? "", receipt_no: r.receipt_no, date: jstDateTime(r.created_at), item: `${p?.models?.brand} ${p?.models?.model} ${p?.storage} ${p?.color}`, imei: p?.imei ?? "", price: r.sale_price, payment: r.payment, customer: r.customer_name ?? "", staff: staffName(r) });
                         }
                       }}
                     >

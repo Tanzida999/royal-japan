@@ -43,3 +43,5 @@
 - Sales have a channel (in_store/online) on receipts; online sales create a shipments row (carrier, tracking, status) updated only via update_shipment. COD fee (¥1,500/2,000/2,500) is a separate receipt line, not discounted. New tables are queried through the untyped `db` client in src/lib/catalog.ts.
 - Model selection uses src/components/ModelPicker.tsx (search + brand chips, compact mode for bulk rows). Staff may add a missing model only via add_model (dedupes case-insensitively, never edits existing models); renaming/moving models stays owner/manager-only via save_model.
 - Find in Other Shops mirrors New Sale: shop chips → category tiles → model tiles → storage chips → phone cards with Request.
+- Receipt notes: receipts.note (≤500 chars) set only via set_receipt_note (works_at_shop + audit log), saved right after checkout and editable in Sales History; printed under "Notes". Receipts show per-item discounts from the items snapshot.
+- Cart discount dialog explains the staff limit (pos_settings.staff_discount_percent, default 0 = staff cannot discount); owner/manager are unlimited.

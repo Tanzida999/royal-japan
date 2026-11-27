@@ -17,7 +17,8 @@ export type ReceiptData = {
   phone?: string;
   logo?: string | null;
   footer?: string;
-  items?: { model: string; storage: string; color: string; condition?: string; imei: string; price: number; quantity?: number | undefined; unit_price?: number }[];
+  items?: { model: string; storage: string; color: string; condition?: string; imei: string; price: number; quantity?: number | undefined; unit_price?: number; discount?: number }[];
+  note?: string | undefined;
   subtotal?: number;
   discount?: number;
   paid?: number;
@@ -40,10 +41,10 @@ export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData;
       {receipt.addressee && <div className="space-y-2 border-y py-2"><div className="text-center text-lg font-bold">Receipt</div><div>{receipt.addressee}</div><div>Purpose: {receipt.purpose || "For goods"}</div></div>}
       <div className="text-xs">{receipt.date}</div>
       <hr />
-      {receipt.items ? receipt.items.map((i,index) => <div key={`${i.imei}-${index}`} className="space-y-1 border-b pb-2"><div>{i.model} {i.storage} {i.color}</div>{i.imei && <div className="text-xs">IMEI: {i.imei}</div>}{i.quantity && <div className="text-xs">{i.quantity} × {yen(i.unit_price ?? i.price)}</div>}<div className="text-right">{yen(i.price)}</div></div>) : <><div>{receipt.item}</div><div className="text-xs">IMEI: {receipt.imei}</div></>}
+      {receipt.items ? receipt.items.map((i,index) => <div key={`${i.imei}-${index}`} className="space-y-1 border-b pb-2"><div>{i.model} {i.storage} {i.color}</div>{i.imei && <div className="text-xs">IMEI: {i.imei}</div>}{i.quantity && <div className="text-xs">{i.quantity} × {yen(i.unit_price ?? i.price)}</div>}{(i.discount ?? 0) > 0 && <div className="flex justify-between text-xs"><span>Discount</span><span>−{yen(i.discount ?? 0)}</span></div>}<div className="text-right">{yen(i.price)}</div></div>) : <><div>{receipt.item}</div><div className="text-xs">IMEI: {receipt.imei}</div></>}
       <hr />
       <div className="flex justify-between"><span>Subtotal</span><span>{yen(receipt.subtotal ?? receipt.price)}</span></div>
-      <div className="flex justify-between"><span>Discount</span><span>{yen(receipt.discount ?? 0)}</span></div>
+      {(receipt.discount ?? 0) > 0 && <div className="flex justify-between"><span>Discount</span><span>−{yen(receipt.discount ?? 0)}</span></div>}
       <div className="flex justify-between font-bold">
         <span>TOTAL</span>
         <span>{yen(receipt.price)}</span>
@@ -60,6 +61,7 @@ export function Receipt({ receipt, format = "thermal" }: { receipt: ReceiptData;
       {receipt.customer && <div className="text-xs">Customer: {receipt.customer}</div>}
       {receipt.customer_phone && <div className="text-xs">Customer phone: {receipt.customer_phone}</div>}
       <div className="text-xs">Staff: {receipt.staff}</div>
+      {receipt.note && <div className="space-y-1 border-t pt-2"><div className="text-xs font-bold">Notes</div><div className="whitespace-pre-wrap break-words text-xs">{receipt.note}</div></div>}
       <div className="whitespace-pre-wrap pt-2 text-center text-xs">{receipt.footer || "Thank you!"}</div>
     </div>
   );

@@ -49,6 +49,7 @@ function Payment() {
   const [tracking, setTracking] = useState('');
   const [postal, setPostal] = useState('');
   const [address, setAddress] = useState('');
+  const [note, setNote] = useState('');
 
   const lines = cart.shop === shopId && cart.owner === me?.id ? cart.lines : [];
   const privileged = me?.role === 'owner' || Boolean(me?.manager);
@@ -127,6 +128,14 @@ function Payment() {
         ({ data: r, error: e } = await db.rpc('complete_pos_sale', args));
       }
       if (e) throw e;
+      const cleanNote = note.trim().slice(0, 500);
+      if (cleanNote) {
+        // Save the note on the receipt (needs the receipt-notes database update; the printed receipt shows it either way)
+        const { error: ne } = await db.rpc('set_receipt_note', { _receipt_id: r.id, _note: cleanNote });
+        if (ne) console.warn('Receipt note not saved:', ne.message);
+        r.note = cleanNote;
+      }
+      setNote('');
       if (useRegister.getState().shop === shopId && useRegister.getState().owner === me?.id) cart.completed(receiptView(r), r.share_token);
       await Promise.all(['register', 'stock', 'dashboard', 'sales-list', 'receipts', 'find-products', 'stock-check-products', 'shipments'].map((key) => qc.invalidateQueries({ queryKey: [key] })));
       await navigate({ to: '/completed' });
@@ -222,6 +231,11 @@ function Payment() {
             </div>
           ))}
         </div>
+        <label className="block space-y-1">
+          <span className="text-sm font-medium">Notes on the receipt (optional)</span>
+          <textarea aria-label="Receipt notes" className="field min-h-20 w-full py-2" maxLength={500} placeholder="e.g. Warranty 3 months · Screen protector included · Customer will pick up case tomorrow" value={note} onChange={(e) => setNote(e.target.value)} />
+          <span className="block text-right text-xs text-muted-foreground">{note.length}/500</span>
+        </label>
         <div className="flex items-center justify-between border-t py-6"><RegisterLabel en="Change" /><strong className="text-3xl text-primary">{yen(tender.change)}</strong></div>
         {(error || issue) && <p role="alert" className="text-destructive">{error || issue}</p>}
       </>}
