@@ -2,11 +2,13 @@ import { pageMeta } from "@/lib/metadata";
 import { useCurrentShop, settingsQuery } from "@/lib/shop-context";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Smartphone, Tablet, Laptop, Search, Store, ArrowLeft, Battery } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { PRODUCT_SELECT, yen, type ProductRow } from "@/lib/app";
-import { categoriesQuery } from "@/lib/catalog";
+import { PRODUCT_SELECT, yen, jstDate, type ProductRow } from "@/lib/app";
+import { categoriesQuery, specsText } from "@/lib/catalog";
+import { ProductPhotos } from "@/components/ProductPhotos";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -29,6 +31,7 @@ function Find() {
   const [storage, setStorage] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [busy, setBusy] = useState("");
+  const [detail, setDetail] = useState<ProductRow | null>(null);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["find-products"],
@@ -167,7 +170,9 @@ function Find() {
             {phones.map((p) => {
               const requested = open.includes(p.id);
               return (
-                <div key={p.id} className="flex flex-col gap-2 rounded-xl border bg-card p-4">
+                <div key={p.id} role="button" tabIndex={0} aria-label={`Details of ${modelName(p)} ${p.product_code}`}
+                  onClick={() => setDetail(p)} onKeyDown={(e) => { if (e.key === "Enter") setDetail(p); }}
+                  className="flex cursor-pointer flex-col gap-2 rounded-xl border bg-card p-4 transition hover:border-primary hover:shadow-sm">
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <div className="font-semibold">{modelName(p)}</div>
@@ -180,9 +185,10 @@ function Find() {
                     {p.battery_health ? <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5"><Battery className="size-3" />{p.battery_health}%</span> : null}
                     <span className="rounded-full bg-muted px-2 py-0.5 font-mono">{p.product_code}</span>
                   </div>
+                  <span className="text-xs font-semibold text-primary">Tap for details & photos →</span>
                   <div className="mt-auto flex items-center justify-between gap-2 pt-1">
                     <span className="text-xl font-bold text-primary">{yen(p.selling_price)}</span>
-                    <Button className="h-11" variant={requested ? "outline" : "default"} disabled={requested || !shopId || busy === p.id} onClick={() => request(p)}>
+                    <Button className="h-11" variant={requested ? "outline" : "default"} disabled={requested || !shopId || busy === p.id} onClick={(e) => { e.stopPropagation(); void request(p); }}>
                       {requested ? "Requested" : busy === p.id ? "Requesting…" : "Request to my shop"}
                     </Button>
                   </div>
@@ -192,6 +198,40 @@ function Find() {
           </div>
         ) : <p className="py-8 text-center text-muted-foreground">No phones found{q ? ` for "${search.trim()}"` : ""}.</p>
       )}
+      <Dialog open={!!detail} onOpenChange={(o) => { if (!o) setDetail(null); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          {detail && (() => {
+            const d = detail; const requested = open.includes(d.id);
+            const specs = specsText(d.specs);
+            const rows: [string, ReactNode][] = [
+              ["Shop", d.shops?.name],
+              ["Storage", d.storage], ["Colour", d.color], ["Condition", d.condition],
+              ["Battery health", d.battery_health ? `${d.battery_health}%` : "—"],
+              ["IMEI / serial", <span className="font-mono">{d.imei}</span>],
+              ["Product code", <span className="font-mono">{d.product_code}</span>],
+              ...(specs ? [["Specs", specs] as [string, ReactNode]] : []),
+              ...(d.carrier || d.tracking_number ? [["Shipping", [d.carrier, d.tracking_number].filter(Boolean).join(" · ")] as [string, ReactNode]] : []),
+              ["Added", jstDate(d.created_at)],
+            ];
+            return (
+              <div className="space-y-4">
+                <DialogTitle className="text-xl">{modelName(d)}</DialogTitle>
+                <ProductPhotos productId={d.id} size="lg" />
+                <div className="text-3xl font-bold text-primary">{yen(d.selling_price)}</div>
+                <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+                  {rows.map(([k, v]) => (<Fragment key={k}><dt className="text-muted-foreground">{k}</dt><dd className="font-medium">{v || "—"}</dd></Fragment>))}
+                </dl>
+                <div className="flex flex-wrap justify-end gap-2">
+                  <Button variant="outline" className="h-11" onClick={() => setDetail(null)}>Close</Button>
+                  <Button className="h-11" disabled={requested || !shopId || busy === d.id} onClick={() => void request(d)}>
+                    {requested ? "Requested" : !shopId ? "Select your shop to request" : busy === d.id ? "Requesting…" : "Request to my shop"}
+                  </Button>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
