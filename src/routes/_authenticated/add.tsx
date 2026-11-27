@@ -2,7 +2,7 @@ import { logEvent } from "@/lib/audit";
 import { pageMeta } from "@/lib/metadata";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { jstDate, meQuery, modelsQuery, shopsQuery, PRODUCT_SELECT, yen, type ProductRow } from "@/lib/app";
@@ -25,6 +25,7 @@ import { SupplierSelect } from "@/components/SupplierSelect";
 import { activeSuppliersQuery, supplierProblem } from "@/lib/supplier-directory";
 import { categoriesQuery, db, PHONE_COLORS, COMPUTER_COLORS, PHONE_STORAGE, COMPUTER_DISK, COMPUTER_PROCESSORS, COMPUTER_GENERATIONS, COMPUTER_RAM, COMPUTER_DISPLAY, SERIAL_RE, BATTERY_OPTIONS, emptySpecs, type CategoryKind, type ComputerSpecs } from "@/lib/catalog";
 import { compressImage } from "@/lib/product-extras";
+import { ModelPicker, type PickerModel } from "@/components/ModelPicker";
 
 export const Route = createFileRoute("/_authenticated/add")({
   head: () => pageMeta("Add Product — Mobile Shop Manager", "Register individual phones or bulk purchases with verified staff badges."),
@@ -65,7 +66,7 @@ function AddProduct() {
   const [bulk, setBulk] = useState(false);
   const { shopId, setShopId, isOwner } = useCurrentShop();
   const imeiRef = useRef<HTMLInputElement>(null);
-  const brandRef = useRef<HTMLSelectElement>(null);
+  const brandRef = useRef<HTMLInputElement>(null);
   const purchaseRef = useRef<HTMLInputElement>(null);
   const [autoFilled, setAutoFilled] = useState<string[]>([]);
   const [jan, setJan] = useState("");
@@ -208,7 +209,7 @@ function AddProduct() {
     setAutoFilled([]);
     const g = await guessFromImei(v);
     if (warning) { setScanNote(warning); if (!g) { brandRef.current?.focus(); return; } }
-    if (!g) { setScanNote("New model code: pick the brand and model once. Next time this model fills in automatically."); brandRef.current?.focus(); return; }
+    if (!g) { setScanNote("New model code: type the model below and tap it once (or add it if it is missing). Next time this model fills in automatically."); brandRef.current?.focus(); return; }
     const m = models.find((x) => x.id === g.model_id);
     if (m && m.id !== modelId) { setColor(""); setStorage(""); } // different model: don't keep the last phone's colour/storage
     if (m) { setBrand(m.brand); setModelId(m.id); const cid = (m as { category_id?: string | null }).category_id; if (cid) setCategory(cid); }
@@ -245,9 +246,6 @@ function AddProduct() {
     return true;
   }
 
-  const catModels = category ? models.filter((m) => (m as { category_id?: string | null }).category_id === category) : models;
-  const brands = useMemo(() => [...new Set(catModels.map((m) => m.brand))], [catModels]);
-  const brandModels = catModels.filter((m) => m.brand === brand);
 
   // Existing IMEIs, for duplicate checks in bulk mode
   const { data: existingImeis = [] } = useQuery({
@@ -582,30 +580,24 @@ function AddProduct() {
               {scanNote && !scanProblem && <p className="text-xs text-primary">{scanNote}</p>}
               <CameraScan onScan={c => void acceptImei(c)} accept={(c) => { const t = toHalfWidth(c).trim().toUpperCase(); if (/^\d{8,13}$/.test(t) && isStoreCode(t)) return "That is a shop price-sticker barcode — scan the IMEI or the box JAN"; if (isJanCode(t)) return t === jan ? "Box barcode already read — now hold the IMEI barcode in the frame (cover the big box barcode with your finger)" : true; if (extractImei(t).imei) return true; if (kind !== "phone" && SERIAL_RE.test(t.replace(/\s/g, ""))) return true; return extractImei(t).problem || "Not an IMEI — keep scanning"; }} />
             </Field>
-            <Field label="Brand">
-              <select
-                ref={brandRef}
-                className="field"
-                value={brand}
-                onChange={(e) => {
-                  setBrand(e.target.value);
-                  setModelId("");
-                }}
-              >
-                <option value="">Select brand</option>
-                {brands.map((b) => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Model">
-              <select className={`field ${autoFilled.includes("model") ? "ring-2 ring-amber-400" : ""}`} value={modelId} onChange={(e) => { setModelId(e.target.value); setAutoFilled((a) => a.filter((x) => x !== "model")); }} disabled={!brand}>
-                <option value="">Select model</option>
-                {brandModels.map((m) => (
-                  <option key={m.id} value={m.id}>{m.model}</option>
-                ))}
-              </select>
-            </Field>
+            <div className="sm:col-span-2">
+              <Field label="Model (type a few letters or tap a brand)">
+                <ModelPicker
+                  ref={brandRef}
+                  models={models as PickerModel[]}
+                  categories={activeCategories}
+                  categoryId={category}
+                  value={modelId}
+                  highlight={autoFilled.includes("model")}
+                  onChange={(m) => {
+                    if (m && m.id !== modelId) { setColor(""); setStorage(""); }
+                    setBrand(m?.brand ?? ""); setModelId(m?.id ?? "");
+                    if (m?.category_id && !category) setCategory(m.category_id);
+                    setAutoFilled((a) => a.filter((x) => x !== "model"));
+                  }}
+                />
+              </Field>
+            </div>
             <Field label="Color">
               <div className={autoFilled.includes("color") ? "rounded-md ring-2 ring-amber-400" : ""}><ColorSelect value={color} onChange={(v) => { setColor(v); setAutoFilled((a) => a.filter((x) => x !== "color")); }} options={isComputer ? COMPUTER_COLORS : PHONE_COLORS} /></div>
             </Field>
@@ -680,10 +672,7 @@ function AddProduct() {
                   <tr key={i} className="border-t align-top">
                     <td className="p-2">{i + 1}</td>
                     <td className="p-1">
-                      <select className="field min-w-40" value={r.model_id} onChange={(e) => setRow(i, { model_id: e.target.value })}>
-                        <option value="">Select</option>
-                        {models.map((m) => <option key={m.id} value={m.id}>{m.brand} {m.model}</option>)}
-                      </select>
+                      <ModelPicker compact models={models as PickerModel[]} categories={activeCategories} value={r.model_id} onChange={(m) => setRow(i, { model_id: m?.id ?? "" })} />
                     </td>
                     <td className="p-1">
                       <Input
