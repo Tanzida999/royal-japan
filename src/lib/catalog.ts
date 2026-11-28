@@ -33,12 +33,19 @@ export const COMPUTER_RAM = ["4GB", "8GB", "12GB", "16GB", "18GB", "24GB", "32GB
 export const COMPUTER_DISPLAY = ['11.6"', '12"', '12.5"', '13"', '13.3"', '13.5"', '13.6"', '14"', '14.2"', '15"', '15.3"', '15.6"', '16"', '16.2"', '17.3"', '24" (desktop)', '27" (desktop)'];
 /** Battery health choices (%), newest first. */
 export const BATTERY_OPTIONS = Array.from({ length: 51 }, (_, i) => 100 - i);
+/** "Normal" = battery checked and fine, no % shown (saved in specs.battery). */
+export const BATTERY_NORMAL = "Normal";
+/** RAM choices for Android phones and tablets. */
+export const PHONE_RAM = ["1GB", "2GB", "3GB", "4GB", "6GB", "8GB", "10GB", "12GB", "16GB", "18GB", "24GB"];
+/** Battery text for a product: "87%" or "Normal" (or "" when not checked). */
+export const batteryText = (pct: number | null | undefined, specs?: Record<string, unknown> | null) =>
+  pct ? `${pct}%` : specs?.battery ? String(specs.battery) : "";
 export const SERIAL_RE = /^[A-Z0-9][A-Z0-9-]{4,29}$/;
 
 export type ComputerSpecs = { processor: string; generation: string; ram: string; display: string };
 export const emptySpecs = (): ComputerSpecs => ({ processor: "", generation: "", ram: "", display: "" });
 export const specsText = (s: Record<string, unknown> | null | undefined) =>
-  ["processor", "generation", "ram", "display"].map((k) => String(s?.[k] ?? "")).filter(Boolean).join(" · ");
+  ["processor", "generation", "ram", "display"].map((k) => { const v = String(s?.[k] ?? ""); return v && k === "ram" ? `RAM ${v}` : v; }).filter(Boolean).join(" · ");
 
 export const PLATFORMS = ["Mercari", "Yahoo Auctions", "Rakuma", "Amazon", "Rakuten", "Own website", "LINE / phone order", "Facebook / Instagram", "Other"];
 export const COD_FEES = [1500, 2000, 2500];

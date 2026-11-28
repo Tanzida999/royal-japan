@@ -6,7 +6,7 @@ import { Fragment, useMemo, useState, type ReactNode } from "react";
 import { Smartphone, Tablet, Laptop, Search, Store, ArrowLeft, Battery } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PRODUCT_SELECT, yen, jstDate, type ProductRow } from "@/lib/app";
-import { categoriesQuery, specsText } from "@/lib/catalog";
+import { batteryText, categoriesQuery, specsText } from "@/lib/catalog";
 import { ProductPhotos } from "@/components/ProductPhotos";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -182,7 +182,7 @@ function Find() {
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="rounded-full bg-muted px-2 py-0.5">{p.condition}</span>
-                    {p.battery_health ? <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5"><Battery className="size-3" />{p.battery_health}%</span> : null}
+                    {batteryText(p.battery_health, p.specs) ? <span className="flex items-center gap-1 rounded-full bg-muted px-2 py-0.5"><Battery className="size-3" />{batteryText(p.battery_health, p.specs)}</span> : null}
                     <span className="rounded-full bg-muted px-2 py-0.5 font-mono">{p.product_code}</span>
                   </div>
                   <span className="text-xs font-semibold text-primary">Tap for details & photos →</span>
@@ -206,7 +206,7 @@ function Find() {
             const rows: [string, ReactNode][] = [
               ["Shop", d.shops?.name],
               ["Storage", d.storage], ["Colour", d.color], ["Condition", d.condition],
-              ["Battery health", d.battery_health ? `${d.battery_health}%` : "—"],
+              ["Battery health", batteryText(d.battery_health, d.specs) || "—"],
               ["IMEI / serial", <span className="font-mono">{d.imei}</span>],
               ["Product code", <span className="font-mono">{d.product_code}</span>],
               ...(specs ? [["Specs", specs] as [string, ReactNode]] : []),

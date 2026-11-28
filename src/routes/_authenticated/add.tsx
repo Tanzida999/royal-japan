@@ -23,7 +23,7 @@ import { photoProblem } from "@/lib/product-extras";
 import { uploadProductPhotos } from "@/lib/product-photos";
 import { SupplierSelect } from "@/components/SupplierSelect";
 import { activeSuppliersQuery, supplierProblem } from "@/lib/supplier-directory";
-import { categoriesQuery, db, PHONE_COLORS, COMPUTER_COLORS, PHONE_STORAGE, COMPUTER_DISK, COMPUTER_PROCESSORS, COMPUTER_GENERATIONS, COMPUTER_RAM, COMPUTER_DISPLAY, SERIAL_RE, BATTERY_OPTIONS, emptySpecs, type CategoryKind, type ComputerSpecs } from "@/lib/catalog";
+import { categoriesQuery, db, PHONE_COLORS, COMPUTER_COLORS, PHONE_STORAGE, COMPUTER_DISK, COMPUTER_PROCESSORS, COMPUTER_GENERATIONS, COMPUTER_RAM, COMPUTER_DISPLAY, SERIAL_RE, BATTERY_OPTIONS, BATTERY_NORMAL, PHONE_RAM, emptySpecs, type CategoryKind, type ComputerSpecs } from "@/lib/catalog";
 import { compressImage } from "@/lib/product-extras";
 import { ModelPicker, type PickerModel } from "@/components/ModelPicker";
 
@@ -79,6 +79,7 @@ function AddProduct() {
   const [storage, setStorage] = useState("");
   const [condition, setCondition] = useState<string>("New");
   const [battery, setBattery] = useState("");
+  const [ram, setRam] = useState("");
   const [purchase, setPurchase] = useState("");
   const [selling, setSelling] = useState("");
   const [supplier, setSupplier] = useState("");
@@ -117,7 +118,7 @@ function AddProduct() {
       const d = JSON.parse(localStorage.getItem(draftKey) ?? "null");
       if (!d || Date.now() - d.t > 12 * 3600_000) return;
       setBulk(Boolean(d.bulk)); setCategory(d.category ?? ""); setBrand(d.brand ?? ""); setModelId(d.modelId ?? "");
-      setColor(d.color ?? ""); setStorage(d.storage ?? ""); setCondition(d.condition ?? "New"); setBattery(d.battery ?? "");
+      setColor(d.color ?? ""); setStorage(d.storage ?? ""); setCondition(d.condition ?? "New"); setBattery(d.battery ?? ""); setRam(d.ram ?? "");
       setPurchase(d.purchase ?? ""); setSelling(d.selling ?? ""); setSupplier(d.supplier ?? ""); setSupPay(d.supPay ?? "Cash"); setPaid(d.paid ?? "");
       setCarrier(d.carrier ?? ""); setTracking(d.tracking ?? ""); setSpecs({ ...emptySpecs(), ...(d.specs ?? {}) }); setJan(d.jan ?? ""); setJanKnown(Boolean(d.janKnown));
       if (Array.isArray(d.rows) && d.rows.length) { setRows(d.rows); setRowPhotos(d.rows.map(() => [])); }
@@ -128,9 +129,9 @@ function AddProduct() {
   useEffect(() => {
     if (!draftKey || !draftRestored.current) return;
     try {
-      localStorage.setItem(draftKey, JSON.stringify({ t: Date.now(), bulk, category, brand, modelId, imei, color, storage, condition, battery, purchase, selling, supplier, supPay, paid, carrier, tracking, specs, jan, janKnown, rows }));
+      localStorage.setItem(draftKey, JSON.stringify({ t: Date.now(), bulk, category, brand, modelId, imei, color, storage, condition, battery, ram, purchase, selling, supplier, supPay, paid, carrier, tracking, specs, jan, janKnown, rows }));
     } catch { /* storage unavailable */ }
-  }, [draftKey, bulk, category, brand, modelId, imei, color, storage, condition, battery, purchase, selling, supplier, supPay, paid, carrier, tracking, specs, jan, janKnown, rows]);
+  }, [draftKey, bulk, category, brand, modelId, imei, color, storage, condition, battery, ram, purchase, selling, supplier, supPay, paid, carrier, tracking, specs, jan, janKnown, rows]);
   const resolvedImei = useRef("");
 
   const focusImei = () => setTimeout(() => (bulk ? bulkImeiRefs.current[rows.length - 1] : imeiRef.current)?.focus(), 0);
@@ -144,6 +145,11 @@ function AddProduct() {
   };
   const kind: CategoryKind = modelId ? modelKind(modelId) : (categories.find((c) => c.id === category)?.kind ?? "phone");
   const isComputer = kind === "computer";
+  const catName = (id: string) => categories.find((c) => c.id === id)?.name ?? "";
+  const modelCategory = (id: string) => ((models.find((m) => m.id === id) as { category_id?: string | null } | undefined)?.category_id ?? "");
+  /** RAM is asked for Android phones (and Android tablets): anything in a category called Android. */
+  const isAndroidModel = (id: string) => /android/i.test(catName(modelCategory(id)));
+  const isAndroid = modelId ? isAndroidModel(modelId) : /android/i.test(catName(category));
   const idLabel = kind === "phone" ? "IMEI" : isComputer ? "Serial number" : "IMEI or serial number";
   const cleanId = (raw: string) => {
     const v = toHalfWidth(raw).toUpperCase();
@@ -271,16 +277,20 @@ function AddProduct() {
   }
 
   /** Photos + tracking after the product exists; returns problems (product is already saved). */
-  async function afterSave(productId: string, blobs: Blob[], batteryPct = "") {
+  async function afterSave(productId: string, blobs: Blob[], batteryPct = "", phoneRam = "") {
     const problems: string[] = [];
-    if (batteryPct) {
+    const extra: Record<string, string> = {};
+    if (batteryPct === BATTERY_NORMAL) extra.battery = BATTERY_NORMAL;
+    if (phoneRam) extra.ram = phoneRam;
+    if (batteryPct && batteryPct !== BATTERY_NORMAL) {
       const { error } = await db.rpc("set_product_battery", { _product_id: productId, _battery: Number(batteryPct) });
       if (error) problems.push(`Battery health not saved: ${error.message}`);
     }
     try { await uploadProductPhotos(productId, blobs); } catch (e) { problems.push(e instanceof Error ? e.message : "Photos not saved"); }
-    if (isComputer && !bulk && Object.values(specs).some(Boolean)) {
-      const { error } = await db.rpc("set_product_specs", { _product_id: productId, _specs: specs });
-      if (error) problems.push(`Computer details not saved: ${error.message}`);
+    const allSpecs = { ...(isComputer && !bulk ? specs : {}), ...extra };
+    if (Object.values(allSpecs).some(Boolean)) {
+      const { error } = await db.rpc("set_product_specs", { _product_id: productId, _specs: allSpecs });
+      if (error) problems.push(`${isComputer ? "Computer details" : "RAM / battery"} not saved: ${error.message}`);
     }
     if (tracking.trim()) {
       const { error } = await supabase.rpc("set_product_tracking", { _product_id: productId, _carrier: carrier, _tracking_number: tracking });
@@ -376,11 +386,12 @@ function AddProduct() {
       setBusy(false);
       return setError(error.message.includes("duplicate") ? "This IMEI or product code already exists" : error.message);
     }
-    const problems = [...(await afterSave(data.id, photos.map((x) => x.blob), battery)), ...(await saveInvoice([data.id]))];
+    const problems = [...(await afterSave(data.id, photos.map((x) => x.blob), battery, isAndroid ? ram : "")), ...(await saveInvoice([data.id]))];
     if (jan) void learnSku(jan, v.model_id, v.storage, v.color);
     setJan(""); setJanKnown(false);
     setSpecs(emptySpecs());
     setBattery("");
+    setRam("");
     setBusy(false);
     setPostError(problems.length ? `Phone saved, but: ${problems.join("; ")}. Add them from the phone's details page.` : "");
     photos.forEach((x) => URL.revokeObjectURL(x.url));
@@ -388,7 +399,7 @@ function AddProduct() {
     setTracking("");
     setCarrier("");
     setSaved([
-      { product_code: data.product_code, model: modelName(v.model_id), storage: v.storage, selling_price: v.selling_price, imei: data.imei, color: data.color, condition: data.condition, purchase_date: jstDate(data.created_at), shop: shops.find(s => s.id === data.shop_id)?.name ?? "", battery: battery ? Number(battery) : null },
+      { product_code: data.product_code, model: modelName(v.model_id), storage: v.storage, selling_price: v.selling_price, imei: data.imei, color: data.color, condition: data.condition, purchase_date: jstDate(data.created_at), shop: shops.find(s => s.id === data.shop_id)?.name ?? "", battery: battery === BATTERY_NORMAL ? BATTERY_NORMAL : battery ? Number(battery) : null },
     ]);
     qc.invalidateQueries({ queryKey: ["stock"] });
     qc.invalidateQueries({ queryKey: ["suppliers"] });
@@ -428,7 +439,7 @@ function AddProduct() {
     const problems: string[] = [];
     for (const [i, p] of (data ?? []).entries()) {
       const idx = rows.findIndex((r) => r.imei.trim() === p.imei);
-      problems.push(...(await afterSave(p.id, (rowPhotos[idx >= 0 ? idx : i] ?? []).map((x) => x.blob), rows[idx >= 0 ? idx : i]?.battery ?? "")).map((m) => `${p.product_code}: ${m}`));
+      problems.push(...(await afterSave(p.id, (rowPhotos[idx >= 0 ? idx : i] ?? []).map((x) => x.blob), rows[idx >= 0 ? idx : i]?.battery ?? "", isAndroidModel(p.model_id) ? rows[idx >= 0 ? idx : i]?.ram ?? "" : "")).map((m) => `${p.product_code}: ${m}`));
     }
     problems.push(...(await saveInvoice((data ?? []).map((p) => p.id))));
     for (const r of rows) if (r.jan && r.model_id) void learnSku(r.jan, r.model_id, r.storage, r.color);
@@ -444,7 +455,7 @@ function AddProduct() {
         model: modelName(p.model_id),
         storage: p.storage,
         selling_price: p.selling_price, imei: p.imei, color: p.color, condition: p.condition, purchase_date: jstDate(p.created_at), shop: shops.find(s => s.id === p.shop_id)?.name ?? "",
-        battery: Number(rows.find((r) => r.imei === p.imei)?.battery) || null,
+        battery: ((b) => b === BATTERY_NORMAL ? BATTERY_NORMAL : Number(b) || null)(rows.find((r) => r.imei === p.imei)?.battery),
       })),
     );
     qc.invalidateQueries({ queryKey: ["stock"] });
@@ -625,9 +636,15 @@ function AddProduct() {
                 {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
               </select>
             </Field>
-            <Field label="Battery health (%)">
+            {isAndroid && (
+              <Field label="RAM">
+                <OptionSelect label="RAM" value={ram} onChange={setRam} options={PHONE_RAM} placeholder="Select RAM" />
+              </Field>
+            )}
+            <Field label="Battery health">
               <select className="field" aria-label="Battery health" value={battery} onChange={(e) => setBattery(e.target.value)}>
                 <option value="">Not checked</option>
+                <option value={BATTERY_NORMAL}>Normal</option>
                 {BATTERY_OPTIONS.map((n) => <option key={n} value={n}>{n}%</option>)}
               </select>
             </Field>
@@ -661,6 +678,7 @@ function AddProduct() {
                   <th className="p-2">Storage</th>
                   <th className="p-2">Cond.</th>
                   <th className="p-2">Battery</th>
+                  <th className="p-2">RAM</th>
                   <th className="p-2">Purchase ¥</th>
                   <th className="p-2">Selling ¥</th>
                   <th className="p-2">Photos</th>
@@ -689,7 +707,7 @@ function AddProduct() {
                           if (e.key === "Enter" && !e.nativeEvent.isComposing) {
                             e.preventDefault();
                             if (!(await acceptRowImei(i, r.imei))) return;
-                            if (i === rows.length - 1) setRows((rs) => [...rs, { ...emptyRow(), model_id: r.model_id, color: r.color, storage: r.storage, condition: r.condition, battery: r.battery, jan: r.jan, purchase_price: r.purchase_price, selling_price: r.selling_price }]);
+                            if (i === rows.length - 1) setRows((rs) => [...rs, { ...emptyRow(), model_id: r.model_id, color: r.color, storage: r.storage, condition: r.condition, battery: r.battery, ram: r.ram, jan: r.jan, purchase_price: r.purchase_price, selling_price: r.selling_price }]);
                             else bulkImeiRefs.current[i + 1]?.focus();
                           }
                         }}
@@ -702,7 +720,8 @@ function AddProduct() {
                         {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
                       </select>
                     </td>
-                    <td className="p-1"><select className="field min-w-20" aria-label="Battery health" value={r.battery ?? ""} onChange={(e) => setRow(i, { battery: e.target.value })}><option value="">—</option>{BATTERY_OPTIONS.map((n) => <option key={n} value={n}>{n}%</option>)}</select></td>
+                    <td className="p-1"><select className="field min-w-20" aria-label="Battery health" value={r.battery ?? ""} onChange={(e) => setRow(i, { battery: e.target.value })}><option value="">—</option><option value={BATTERY_NORMAL}>Normal</option>{BATTERY_OPTIONS.map((n) => <option key={n} value={n}>{n}%</option>)}</select></td>
+                    <td className="p-1">{isAndroidModel(r.model_id) ? <select className="field min-w-20" aria-label={`RAM row ${i + 1}`} value={r.ram ?? ""} onChange={(e) => setRow(i, { ram: e.target.value })}><option value="">—</option>{PHONE_RAM.map((o) => <option key={o} value={o}>{o}</option>)}</select> : <span className="block p-2 text-xs text-muted-foreground">—</span>}</td>
                     <td className="p-1"><Input className="min-w-24" inputMode="numeric" value={r.purchase_price} onChange={(e) => setRow(i, { purchase_price: e.target.value.replace(/\D/g, "") })} /></td>
                     <td className="p-1"><Input className="min-w-24" inputMode="numeric" value={r.selling_price} onChange={(e) => setRow(i, { selling_price: e.target.value.replace(/\D/g, "") })} /></td>
                     <td className="p-1"><div className="min-w-32"><PhotoPicker compact photos={rowPhotos[i] ?? []} onChange={(ps) => setRowPhotos((all) => { const next = [...all]; next[i] = ps; return next; })} /></div></td>

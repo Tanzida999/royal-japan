@@ -45,3 +45,6 @@
 - Find in Other Shops mirrors New Sale: shop chips → category tiles → model tiles → storage chips → phone cards with Request.
 - Receipt notes: receipts.note (≤500 chars) set only via set_receipt_note (works_at_shop + audit log), saved right after checkout and editable in Sales History; printed under "Notes". Receipts show per-item discounts from the items snapshot.
 - Cart discount dialog explains the staff limit (pos_settings.staff_discount_percent, default 0 = staff cannot discount); owner/manager are unlimited.
+
+- Battery "Normal" (Add Product): saved as `specs.battery = "Normal"` with `battery_health` left empty; a % still goes to `battery_health`. Show with `batteryText(battery_health, specs)` from `src/lib/catalog.ts`.
+- Android RAM: Add Product shows a RAM select (`PHONE_RAM`) when the model's category name contains "Android" (single and bulk); saved as `specs.ram` via `set_product_specs`. No database change needed.

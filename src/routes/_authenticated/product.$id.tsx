@@ -11,7 +11,7 @@ import { ProductPhotos } from "@/components/ProductPhotos";
 import { PhotoPicker, type PickedPhoto } from "@/components/PhotoPicker";
 import { TrackButton, TrackingEditor } from "@/components/TrackingEditor";
 import { Button } from "@/components/ui/button";
-import { db, specsText } from "@/lib/catalog";
+import { batteryText, db, specsText } from "@/lib/catalog";
 import { EditProduct } from "@/components/EditProduct";
 
 export const Route = createFileRoute("/_authenticated/product/$id")({
@@ -77,7 +77,7 @@ function ProductDetail() {
       <Link to="/stock" className="text-sm text-primary">← Stock</Link>
       <div className="rounded-xl border bg-card p-4 sm:p-6">
         <h1 className="text-2xl font-bold">{p.models?.brand} {p.models?.model}</h1>
-        <p className="text-muted-foreground">{p.storage} · {p.color} · {p.condition}{p.battery_health ? ` · Battery ${p.battery_health}%` : ""} · {yen(p.selling_price)}</p>
+        <p className="text-muted-foreground">{p.storage} · {p.color} · {p.condition}{batteryText(p.battery_health, extra?.specs) ? ` · Battery ${batteryText(p.battery_health, extra?.specs)}` : ""} · {yen(p.selling_price)}</p>
         <p className="font-mono text-sm">{p.product_code} · {/^\d{15}$/.test(p.imei) ? "IMEI" : "Serial"} {p.imei}</p>
         {extra?.specs && specsText(extra.specs) && <p className="text-sm">{specsText(extra.specs)}</p>}
         {invoice && (
