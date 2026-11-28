@@ -48,3 +48,10 @@
 
 - Battery statuses (Normal, Service, Replaced…, list `BATTERY_STATUSES`): saved as `specs.battery` with `battery_health` left empty; a % still goes to `battery_health`. Show with `batteryText(battery_health, specs)` from `src/lib/catalog.ts`.
 - Android RAM: Add Product shows a RAM select (`PHONE_RAM`) when the model's category name contains "Android" (single and bulk); saved as `specs.ram` via `set_product_specs`. No database change needed.
+
+- Attendance (`/attendance` for everyone, `/attendance-report` for owner/manager; migration `20261128080000_attendance.sql`):
+  - Staff set up a passkey (fingerprint / Face ID / phone PIN) once per phone (`register_attendance_device`, one phone per staff; owner/manager can reset). Each punch asks for it in the browser (WebAuthn, userVerification required) and sends the credential id; the server checks the id belongs to the user. The signature itself is not verified on the server (no edge function).
+  - `attendance_punch` checks GPS against the nearest shop the person works at (`shops.lat/lng/geofence_m`, set on the Shops page). Clock-in must be inside the area; other punches are flagged when outside.
+  - While "out", the page sends `attendance_track` about every minute (only while the page is open; web apps can't track in the background). Points in `attendance_points`.
+  - `attendance_month(date)` gives one row per staff per JST day. A day without clock-out counts 0 h until a manager adds it (`attendance_add_manual`, audit logged).
+- `log_event` only allows a fixed list of actions. Server functions log with `log_app_event` (no list, not callable by clients). `add_model` and `set_receipt_note` were switched to it.

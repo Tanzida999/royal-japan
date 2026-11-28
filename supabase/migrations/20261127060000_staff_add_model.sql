@@ -1,6 +1,17 @@
 -- Staff can add a missing model while adding a product (they can't rename or move existing models).
 -- If the same brand + model already exists (any capitals / extra spaces), that model is returned instead of a duplicate.
 -- Safe to run again.
+-- Audit helper for server functions (any action name). Only callable from other database functions.
+create or replace function public.log_app_event(_action text, _table text, _record_id text, _details jsonb) returns void
+language plpgsql security definer set search_path = public as $$
+declare pr public.profiles;
+begin
+  select * into pr from profiles where id = auth.uid();
+  insert into audit_log (user_id, user_name, staff_code, shop_id, action, table_name, record_id, new_values, device)
+  values (auth.uid(), pr.name, pr.staff_code, coalesce(nullif(_details->>'shop_id','')::uuid, pr.shop_id), left(_action,50), left(_table,50), left(_record_id,100), _details, request_device());
+end $$;
+revoke all on function public.log_app_event(text, text, text, jsonb) from public, anon, authenticated;
+
 create or replace function public.add_model(_brand text, _model text, _category_id uuid)
 returns public.models language plpgsql security definer set search_path = public as $$
 declare
@@ -24,7 +35,7 @@ begin
   insert into models (brand, model, category_id, sort)
   values (b, n, _category_id, coalesce((select max(sort) + 1 from models where brand = b), 0))
   returning * into m;
-  perform log_event('add_model', 'models', m.id::text, jsonb_build_object('brand', b, 'model', n, 'category_id', _category_id));
+  perform log_app_event('add_model', 'models', m.id::text, jsonb_build_object('brand', b, 'model', n, 'category_id', _category_id));
   return m;
 exception when unique_violation then
   select * into m from models where brand = b and model = n;

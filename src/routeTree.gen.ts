@@ -21,6 +21,8 @@ import { Route as AuthenticatedCompletedRouteImport } from './routes/_authentica
 import { Route as AuthenticatedCustomersRouteImport } from './routes/_authenticated/customers'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedFindRouteImport } from './routes/_authenticated/find'
+import { Route as AuthenticatedAttendanceReportRouteImport } from './routes/_authenticated/attendance-report'
+import { Route as AuthenticatedAttendanceRouteImport } from './routes/_authenticated/attendance'
 import { Route as AuthenticatedHomeRouteImport } from './routes/_authenticated/home'
 import { Route as AuthenticatedPaymentRouteImport } from './routes/_authenticated/payment'
 import { Route as AuthenticatedPosSettingsRouteImport } from './routes/_authenticated/pos-settings'
@@ -98,6 +100,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedFindRoute = AuthenticatedFindRouteImport.update({
   id: '/find',
   path: '/find',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAttendanceReportRoute = AuthenticatedAttendanceReportRouteImport.update({
+  id: '/attendance-report',
+  path: '/attendance-report',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAttendanceRoute = AuthenticatedAttendanceRouteImport.update({
+  id: '/attendance',
+  path: '/attendance',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedHomeRoute = AuthenticatedHomeRouteImport.update({
@@ -211,6 +223,8 @@ export interface FileRoutesByFullPath {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/find': typeof AuthenticatedFindRoute
+  '/attendance-report': typeof AuthenticatedAttendanceReportRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/home': typeof AuthenticatedHomeRoute
   '/payment': typeof AuthenticatedPaymentRoute
   '/pos-settings': typeof AuthenticatedPosSettingsRoute
@@ -243,6 +257,8 @@ export interface FileRoutesByTo {
   '/customers': typeof AuthenticatedCustomersRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/find': typeof AuthenticatedFindRoute
+  '/attendance-report': typeof AuthenticatedAttendanceReportRoute
+  '/attendance': typeof AuthenticatedAttendanceRoute
   '/home': typeof AuthenticatedHomeRoute
   '/payment': typeof AuthenticatedPaymentRoute
   '/pos-settings': typeof AuthenticatedPosSettingsRoute
@@ -277,6 +293,8 @@ export interface FileRoutesById {
   '/_authenticated/customers': typeof AuthenticatedCustomersRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/find': typeof AuthenticatedFindRoute
+  '/_authenticated/attendance-report': typeof AuthenticatedAttendanceReportRoute
+  '/_authenticated/attendance': typeof AuthenticatedAttendanceRoute
   '/_authenticated/home': typeof AuthenticatedHomeRoute
   '/_authenticated/payment': typeof AuthenticatedPaymentRoute
   '/_authenticated/pos-settings': typeof AuthenticatedPosSettingsRoute
@@ -311,6 +329,8 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/find'
+    | '/attendance-report'
+    | '/attendance'
     | '/home'
     | '/payment'
     | '/pos-settings'
@@ -343,6 +363,8 @@ export interface FileRouteTypes {
     | '/customers'
     | '/dashboard'
     | '/find'
+    | '/attendance-report'
+    | '/attendance'
     | '/home'
     | '/payment'
     | '/pos-settings'
@@ -376,6 +398,8 @@ export interface FileRouteTypes {
     | '/_authenticated/customers'
     | '/_authenticated/dashboard'
     | '/_authenticated/find'
+    | '/_authenticated/attendance-report'
+    | '/_authenticated/attendance'
     | '/_authenticated/home'
     | '/_authenticated/payment'
     | '/_authenticated/pos-settings'
@@ -490,6 +514,20 @@ declare module '@tanstack/react-router' {
       path: '/find'
       fullPath: '/find'
       preLoaderRoute: typeof AuthenticatedFindRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/attendance-report': {
+      id: '/_authenticated/attendance-report'
+      path: '/attendance-report'
+      fullPath: '/attendance-report'
+      preLoaderRoute: typeof AuthenticatedAttendanceReportRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/attendance': {
+      id: '/_authenticated/attendance'
+      path: '/attendance'
+      fullPath: '/attendance'
+      preLoaderRoute: typeof AuthenticatedAttendanceRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/home': {
@@ -651,6 +689,8 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCustomersRoute: typeof AuthenticatedCustomersRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFindRoute: typeof AuthenticatedFindRoute
+  AuthenticatedAttendanceReportRoute: typeof AuthenticatedAttendanceReportRoute
+  AuthenticatedAttendanceRoute: typeof AuthenticatedAttendanceRoute
   AuthenticatedHomeRoute: typeof AuthenticatedHomeRoute
   AuthenticatedPaymentRoute: typeof AuthenticatedPaymentRoute
   AuthenticatedPosSettingsRoute: typeof AuthenticatedPosSettingsRoute
@@ -678,6 +718,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCustomersRoute: AuthenticatedCustomersRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFindRoute: AuthenticatedFindRoute,
+  AuthenticatedAttendanceReportRoute: AuthenticatedAttendanceReportRoute,
+  AuthenticatedAttendanceRoute: AuthenticatedAttendanceRoute,
   AuthenticatedHomeRoute: AuthenticatedHomeRoute,
   AuthenticatedPaymentRoute: AuthenticatedPaymentRoute,
   AuthenticatedPosSettingsRoute: AuthenticatedPosSettingsRoute,
