@@ -35,6 +35,18 @@ export const COMPUTER_DISPLAY = ['11.6"', '12"', '12.5"', '13"', '13.3"', '13.5"
 export const BATTERY_OPTIONS = Array.from({ length: 51 }, (_, i) => 100 - i);
 /** "Normal" = battery checked and fine, no % shown (saved in specs.battery). */
 export const BATTERY_NORMAL = "Normal";
+/** Battery choices that are not a % (saved in specs.battery). */
+export const BATTERY_STATUSES = [
+  BATTERY_NORMAL,
+  "Service (needs replacing)",
+  "Replaced – genuine",
+  "Replaced – non-genuine",
+  "Unknown part",
+  "New battery",
+  "Below 50%",
+  "Can't check (no power)",
+];
+export const isBatteryStatus = (v: string | null | undefined) => Boolean(v) && BATTERY_STATUSES.includes(String(v));
 /** RAM choices for Android phones and tablets. */
 export const PHONE_RAM = ["1GB", "2GB", "3GB", "4GB", "6GB", "8GB", "10GB", "12GB", "16GB", "18GB", "24GB"];
 /** Battery text for a product: "87%" or "Normal" (or "" when not checked). */

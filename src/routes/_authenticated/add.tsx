@@ -23,7 +23,7 @@ import { photoProblem } from "@/lib/product-extras";
 import { uploadProductPhotos } from "@/lib/product-photos";
 import { SupplierSelect } from "@/components/SupplierSelect";
 import { activeSuppliersQuery, supplierProblem } from "@/lib/supplier-directory";
-import { categoriesQuery, db, PHONE_COLORS, COMPUTER_COLORS, PHONE_STORAGE, COMPUTER_DISK, COMPUTER_PROCESSORS, COMPUTER_GENERATIONS, COMPUTER_RAM, COMPUTER_DISPLAY, SERIAL_RE, BATTERY_OPTIONS, BATTERY_NORMAL, PHONE_RAM, emptySpecs, type CategoryKind, type ComputerSpecs } from "@/lib/catalog";
+import { categoriesQuery, db, PHONE_COLORS, COMPUTER_COLORS, PHONE_STORAGE, COMPUTER_DISK, COMPUTER_PROCESSORS, COMPUTER_GENERATIONS, COMPUTER_RAM, COMPUTER_DISPLAY, SERIAL_RE, BATTERY_OPTIONS, BATTERY_STATUSES, isBatteryStatus, PHONE_RAM, emptySpecs, type CategoryKind, type ComputerSpecs } from "@/lib/catalog";
 import { compressImage } from "@/lib/product-extras";
 import { ModelPicker, type PickerModel } from "@/components/ModelPicker";
 
@@ -280,9 +280,9 @@ function AddProduct() {
   async function afterSave(productId: string, blobs: Blob[], batteryPct = "", phoneRam = "") {
     const problems: string[] = [];
     const extra: Record<string, string> = {};
-    if (batteryPct === BATTERY_NORMAL) extra.battery = BATTERY_NORMAL;
+    if (isBatteryStatus(batteryPct)) extra.battery = batteryPct;
     if (phoneRam) extra.ram = phoneRam;
-    if (batteryPct && batteryPct !== BATTERY_NORMAL) {
+    if (batteryPct && !isBatteryStatus(batteryPct)) {
       const { error } = await db.rpc("set_product_battery", { _product_id: productId, _battery: Number(batteryPct) });
       if (error) problems.push(`Battery health not saved: ${error.message}`);
     }
@@ -399,7 +399,7 @@ function AddProduct() {
     setTracking("");
     setCarrier("");
     setSaved([
-      { product_code: data.product_code, model: modelName(v.model_id), storage: v.storage, selling_price: v.selling_price, imei: data.imei, color: data.color, condition: data.condition, purchase_date: jstDate(data.created_at), shop: shops.find(s => s.id === data.shop_id)?.name ?? "", battery: battery === BATTERY_NORMAL ? BATTERY_NORMAL : battery ? Number(battery) : null },
+      { product_code: data.product_code, model: modelName(v.model_id), storage: v.storage, selling_price: v.selling_price, imei: data.imei, color: data.color, condition: data.condition, purchase_date: jstDate(data.created_at), shop: shops.find(s => s.id === data.shop_id)?.name ?? "", battery: isBatteryStatus(battery) ? battery : battery ? Number(battery) : null },
     ]);
     qc.invalidateQueries({ queryKey: ["stock"] });
     qc.invalidateQueries({ queryKey: ["suppliers"] });
@@ -455,7 +455,7 @@ function AddProduct() {
         model: modelName(p.model_id),
         storage: p.storage,
         selling_price: p.selling_price, imei: p.imei, color: p.color, condition: p.condition, purchase_date: jstDate(p.created_at), shop: shops.find(s => s.id === p.shop_id)?.name ?? "",
-        battery: ((b) => b === BATTERY_NORMAL ? BATTERY_NORMAL : Number(b) || null)(rows.find((r) => r.imei === p.imei)?.battery),
+        battery: ((b) => isBatteryStatus(b) ? b! : Number(b) || null)(rows.find((r) => r.imei === p.imei)?.battery),
       })),
     );
     qc.invalidateQueries({ queryKey: ["stock"] });
@@ -644,7 +644,7 @@ function AddProduct() {
             <Field label="Battery health">
               <select className="field" aria-label="Battery health" value={battery} onChange={(e) => setBattery(e.target.value)}>
                 <option value="">Not checked</option>
-                <option value={BATTERY_NORMAL}>Normal</option>
+                {BATTERY_STATUSES.map((b) => <option key={b} value={b}>{b}</option>)}
                 {BATTERY_OPTIONS.map((n) => <option key={n} value={n}>{n}%</option>)}
               </select>
             </Field>
@@ -720,7 +720,7 @@ function AddProduct() {
                         {CONDITIONS.map((c) => <option key={c}>{c}</option>)}
                       </select>
                     </td>
-                    <td className="p-1"><select className="field min-w-20" aria-label="Battery health" value={r.battery ?? ""} onChange={(e) => setRow(i, { battery: e.target.value })}><option value="">—</option><option value={BATTERY_NORMAL}>Normal</option>{BATTERY_OPTIONS.map((n) => <option key={n} value={n}>{n}%</option>)}</select></td>
+                    <td className="p-1"><select className="field min-w-28" aria-label="Battery health" value={r.battery ?? ""} onChange={(e) => setRow(i, { battery: e.target.value })}><option value="">—</option>{BATTERY_STATUSES.map((b) => <option key={b} value={b}>{b}</option>)}{BATTERY_OPTIONS.map((n) => <option key={n} value={n}>{n}%</option>)}</select></td>
                     <td className="p-1">{isAndroidModel(r.model_id) ? <select className="field min-w-20" aria-label={`RAM row ${i + 1}`} value={r.ram ?? ""} onChange={(e) => setRow(i, { ram: e.target.value })}><option value="">—</option>{PHONE_RAM.map((o) => <option key={o} value={o}>{o}</option>)}</select> : <span className="block p-2 text-xs text-muted-foreground">—</span>}</td>
                     <td className="p-1"><Input className="min-w-24" inputMode="numeric" value={r.purchase_price} onChange={(e) => setRow(i, { purchase_price: e.target.value.replace(/\D/g, "") })} /></td>
                     <td className="p-1"><Input className="min-w-24" inputMode="numeric" value={r.selling_price} onChange={(e) => setRow(i, { selling_price: e.target.value.replace(/\D/g, "") })} /></td>
